@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajuste e Historial de Existencias - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Módulo</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL -->
+    <div id="appContainer" class="flex flex-col min-h-screen hidden">
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[11px] text-betesda-lightgreen font-medium">Control de Existencias & Auditoría de Ajustes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1500px] w-full mx-auto">
+            <!-- BARRA LATERAL -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-hidden z-30">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL EN 2 COLUMNAS -->
+            <main class="flex-grow p-4 lg:p-5 grid grid-cols-1 lg:grid-cols-12 gap-5">
+                
+                <!-- COLUMNA IZQUIERDA: PRODUCTOS Y EXISTENCIAS (7 COLUMNAS) -->
+                <section class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-4 sm:p-5 flex flex-col space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-betesda-lightgreen">
+                        <div>
+                            <h2 class="text-sm font-bold text-betesda-green flex items-center gap-2">
+                                <i class="fa-solid fa-boxes-stacked text-betesda-yellow"></i> Inventario de Productos
+                            </h2>
+                            <p class="text-[11px] text-slate-500 font-medium">Modifica la cantidad física para generar un ajuste.</p>
+                        </div>
+                        <button onclick="openSaveModal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white text-xs font-bold px-4 py-2 rounded-xl shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk text-betesda-yellow"></i> Guardar Ajuste
+                        </button>
+                    </div>
+
+                    <!-- FILTROS COMPACTOS -->
+                    <div class="bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Tipo</label>
+                            <select id="btnTypeSelect" onchange="filterType(this.value)" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 font-bold text-slate-700 text-xs">
+                                <option value="ALL">Todos los tipos</option>
+                                <option value="1">Armazones</option>
+                                <option value="2">Accesorios</option>
+                                <option value="3">Lentes de Contacto</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Marca</label>
+                            <select id="filterMarca" onchange="renderProductStockTable()" class="bg-white border border-betesda-lightgreen text-xs rounded-lg block w-full p-1.5 font-bold text-betesda-darkgreen">
+                                <option value="ALL">Todas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Modelo</label>
+                            <input type="text" id="filterModelo" oninput="renderProductStockTable()" placeholder="Modelo..." class="bg-white border border-betesda-lightgreen text-xs rounded-lg block w-full p-1.5 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Buscar</label>
+                            <input type="text" id="filterSearch" oninput="renderProductStockTable()" placeholder="Buscar..." class="bg-white border border-betesda-lightgreen text-xs rounded-lg block w-full p-1.5 font-medium">
+                        </div>
+                    </div>
+
+                    <!-- TABLA PRODUCTOS -->
+                    <div class="overflow-x-auto border border-betesda-lightgreen rounded-2xl flex-grow max-h-[520px]">
+                        <table class="w-full text-left text-xs text-slate-700">
+                            <thead class="bg-betesda-green text-white font-bold sticky top-0 z-10">
+                                <tr>
+                                    <th class="p-2.5">Producto</th>
+                                    <th class="p-2.5 text-right">P. Compra</th>
+                                    <th class="p-2.5 text-right">P. Venta</th>
+                                    <th class="p-2.5 text-center w-28">Existencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stockTableBody" class="divide-y divide-betesda-lightgreen/50">
+                                <tr><td colspan="4" class="p-4 text-center text-slate-400">Cargando productos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- COLUMNA DERECHA: HISTORIAL DE AJUSTES REALIZADOS (5 COLUMNAS) -->
+                <section class="lg:col-span-5 bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-4 sm:p-5 flex flex-col space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-betesda-lightgreen">
+                        <div>
+                            <h2 class="text-sm font-bold text-betesda-green flex items-center gap-2">
+                                <i class="fa-solid fa-clock-rotate-left text-betesda-yellow"></i> Historial de Ajustes
+                            </h2>
+                            <p class="text-[11px] text-slate-500 font-medium">Registro auditado de quién, cuándo y por qué.</p>
+                        </div>
+                        <span id="logCountBadge" class="bg-betesda-lightgreen text-betesda-darkgreen font-mono font-bold text-[10px] px-2.5 py-1 rounded-full">0 Registros</span>
+                    </div>
+
+                    <!-- BUSCADOR DE HISTORIAL -->
+                    <div>
+                        <input type="text" id="searchLogInput" oninput="renderStockLogsTable()" placeholder="Buscar por usuario, lote, producto o motivo..." class="w-full bg-slate-50 border border-betesda-lightgreen rounded-xl p-2 text-xs outline-none focus:border-betesda-green">
+                    </div>
+
+                    <!-- TABLA HISTORIAL DE AUDITORÍA -->
+                    <div class="overflow-y-auto border border-betesda-lightgreen rounded-2xl flex-grow max-h-[520px] space-y-3 p-2 bg-slate-50/50" id="logsContainer">
+                        <div class="text-center p-6 text-slate-400 text-xs">No hay ajustes registrados aún.</div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIRMACIÓN DE AJUSTE -->
+    <div id="saveModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-lg space-y-4">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-3">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-betesda-yellow"></i> Confirmar Movimiento de Ajuste
+                </h3>
+                <button onclick="closeSaveModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-amber-900 space-y-1">
+                    <p class="font-bold">Se generará un registro imborrable de auditoría.</p>
+                    <p class="text-[11px] text-slate-600">Ingresa obligatoriamente el motivo por el cual estás modificando las piezas:</p>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-betesda-green uppercase mb-1">Motivo del Ajuste / Justificación *</label>
+                    <textarea id="modalMotivo" rows="2" placeholder="Ej: Conteo físico inicial, ajuste de inventario, merma o daño en exhibición..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 text-xs outline-none focus:border-betesda-green"></textarea>
+                </div>
+
+                <div id="summaryChangesList" class="max-h-40 overflow-y-auto space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px]">
+                    <!-- Resumen dinámico -->
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-betesda-lightgreen">
+                <button onclick="closeSaveModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cancelar</button>
+                <button onclick="confirmAndSaveStock()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow">Aplicar y Guardar Registro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        let usersDB = JSON.parse(localStorage.getItem('opti_betesda_users')) || [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador', modulos: ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'loggin.html'] }];
+        let currentUser = null;
+        let productHistory = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
+        let existenciasDB = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || JSON.parse(localStorage.getItem('opti_betesda_inventario')) || [];
+        let stockLogs = JSON.parse(localStorage.getItem('opti_betesda_stock_logs')) || [];
+        let currentFilterType = 'ALL';
+        let sidebarTimer = null;
+        let pendingChanges = [];
+
+        window.onload = function() { checkSession(); };
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (currentUser.user !== 'Admin' && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+                loadFilterMarcas();
+                renderProductStockTable();
+                renderStockLogsTable();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+                showToast("Bienvenido", "success");
+            } else { showToast("Usuario o contraseña incorrectos", "error"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function filterType(type) {
+            currentFilterType = type;
+            renderProductStockTable();
+        }
+
+        function loadFilterMarcas() {
+            const select = document.getElementById('filterMarca');
+            if (!select) return;
+            const marcas = [...new Set(productHistory.map(p => p.marcaNombre).filter(Boolean))].sort();
+            select.innerHTML = '<option value="ALL">Todas</option>';
+            marcas.forEach(m => {
+                select.innerHTML += `<option value="${m}">${m}</option>`;
+            });
+        }
+
+        function getProductStock(marca, modelo) {
+            let total = 0;
+            existenciasDB.forEach(item => {
+                if ((item.marca || '').toLowerCase() === marca.toLowerCase() && 
+                    (item.modelo || '').toLowerCase() === modelo.toLowerCase()) {
+                    total += parseInt(item.cantidad) || 0;
+                }
+            });
+            return total;
+        }
+
+        function renderProductStockTable() {
+            const tbody = document.getElementById('stockTableBody');
+            if (!tbody) return;
+
+            const filterMarca = document.getElementById('filterMarca').value;
+            const filterModelo = document.getElementById('filterModelo').value.toLowerCase().trim();
+            const filterSearch = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+            const filtered = productHistory.filter(p => {
+                const matchType = currentFilterType === 'ALL' || p.tipo === currentFilterType;
+                const matchMarca = filterMarca === 'ALL' || (p.marcaNombre || '').toLowerCase() === filterMarca.toLowerCase();
+                const matchModelo = !filterModelo || (p.modeloNombre || '').toLowerCase().includes(filterModelo);
+                const matchSearch = !searchMatch(p, filterSearch);
+                return matchType && matchMarca && matchModelo && matchSearch;
+            });
+
+            function searchMatch(p, search) {
+                if (!search) return false;
+                const text = `${p.marcaNombre} ${p.modeloNombre}`.toLowerCase();
+                return !text.includes(search);
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400">Sin coincidencias.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtered.forEach((p, index) => {
+                let tipoLabel = 'Armazón';
+                if (p.tipo === '2') tipoLabel = 'Accesorio';
+                if (p.tipo === '3') tipoLabel = 'Lente C.';
+
+                const currentStock = getProductStock(p.marcaNombre, p.modeloNombre);
+                const pCompra = parseFloat(p.precioCompra || 0).toFixed(2);
+                const pVenta = parseFloat(p.precioVenta || 0).toFixed(2);
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen">
+                        <td class="p-2 font-semibold">
+                            <div>${p.marcaNombre} - ${p.modeloNombre}</div>
+                            <span class="text-[9px] text-betesda-green font-bold">(${tipoLabel})</span>
+                        </td>
+                        <td class="p-2 text-right font-mono text-slate-500">$${pCompra}</td>
+                        <td class="p-2 text-right font-mono font-bold text-betesda-darkgreen">$${pVenta}</td>
+                        <td class="p-2 text-center">
+                            <input type="number" min="0" id="stock_input_${index}" data-marca="${p.marcaNombre}" data-modelo="${p.modeloNombre}" data-tipo="${p.tipo}" data-costo="${p.precioCompra || 0}" value="${currentStock}" class="bg-white border-2 border-betesda-lightgreen rounded-lg px-2 py-1 w-20 text-center font-bold text-betesda-darkgreen font-mono text-xs">
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function generateAjusteLoteCode() {
+            const today = new Date();
+            const yy = String(today.getFullYear()).slice(-2);
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const num = (stockLogs.length + 1).toString().padStart(2, '0');
+            return `AJU-${yy}${mm}${dd}-${num}`;
+        }
+
+        function openSaveModal() {
+            const inputs = document.querySelectorAll('#stockTableBody input[type="number"]');
+            pendingChanges = [];
+
+            inputs.forEach(input => {
+                const marca = input.getAttribute('data-marca');
+                const modelo = input.getAttribute('data-modelo');
+                const tipo = input.getAttribute('data-tipo');
+                const costo = parseFloat(input.getAttribute('data-costo')) || 0;
+                const newQty = parseInt(input.value) || 0;
+                const oldQty = getProductStock(marca, modelo);
+
+                if (newQty !== oldQty) {
+                    pendingChanges.push({ marca, modelo, tipo, costo, oldQty, newQty, diff: newQty - oldQty });
+                }
+            });
+
+            if (pendingChanges.length === 0) {
+                showToast("No se detectó ningún cambio en las existencias.", "error");
+                return;
+            }
+
+            const summaryDiv = document.getElementById('summaryChangesList');
+            summaryDiv.innerHTML = '';
+            pendingChanges.forEach(ch => {
+                const sign = ch.diff > 0 ? `+${ch.diff}` : `${ch.diff}`;
+                summaryDiv.innerHTML += `
+                    <div class="flex justify-between border-b pb-1">
+                        <span><strong>${ch.marca} - ${ch.modelo}</strong></span>
+                        <span>${ch.oldQty} ➔ <strong>${ch.newQty}</strong> (<span class="${ch.diff > 0 ? 'text-betesda-green' : 'text-rose-600'} font-bold">${sign}</span>)</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('modalMotivo').value = '';
+            document.getElementById('saveModal').classList.remove('hidden');
+        }
+
+        function closeSaveModal() {
+            document.getElementById('saveModal').classList.add('hidden');
+        }
+
+        function confirmAndSaveStock() {
+            const motivo = document.getElementById('modalMotivo').value.trim();
+            if (!motivo) {
+                showToast("El motivo del ajuste es obligatorio.", "error");
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-MX') + ' ' + now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            const dateISO = now.toISOString().split('T')[0];
+            const userName = currentUser ? currentUser.user : 'Admin';
+            
+            const loteCode = generateAjusteLoteCode();
+
+            pendingChanges.forEach(ch => {
+                let tipoTexto = 'Armazón';
+                if (ch.tipo === '2') tipoTexto = 'Accesorio';
+                if (ch.tipo === '3') tipoTexto = 'Lente de Contacto';
+
+                existenciasDB.unshift({
+                    tipo: tipoTexto,
+                    marca: ch.marca,
+                    modelo: ch.modelo,
+                    lote: loteCode,
+                    folio: 'AJUSTE',
+                    tipoEntrada: `Ajuste: ${motivo}`,
+                    fecha: dateISO,
+                    costo: ch.costo,
+                    cantidad: ch.diff
+                });
+            });
+
+            localStorage.setItem('opti_betesda_existencias', JSON.stringify(existenciasDB));
+
+            const logEntry = {
+                id: Date.now().toString(),
+                user: userName,
+                dateTime: dateStr,
+                loteCode: loteCode,
+                motivo: motivo,
+                changes: [...pendingChanges]
+            };
+            stockLogs.unshift(logEntry);
+            localStorage.setItem('opti_betesda_stock_logs', JSON.stringify(stockLogs));
+
+            closeSaveModal();
+            showToast("Ajuste registrado correctamente", "success");
+            renderProductStockTable();
+            renderStockLogsTable();
+        }
+
+        function renderStockLogsTable() {
+            const container = document.getElementById('logsContainer');
+            const badge = document.getElementById('logCountBadge');
+            const search = (document.getElementById('searchLogInput').value || '').toLowerCase().trim();
+
+            if (!container) return;
+            badge.textContent = `${stockLogs.length} Registros`;
+
+            let logsFiltrados = stockLogs.filter(log => {
+                if (!search) return true;
+                const text = `${log.user} ${log.loteCode} ${log.motivo} ${log.dateTime}`.toLowerCase();
+                const matchItems = log.changes.some(c => `${c.marca} ${c.modelo}`.toLowerCase().includes(search));
+                return text.includes(search) || matchItems;
+            });
+
+            if (logsFiltrados.length === 0) {
+                container.innerHTML = `<div class="text-center p-6 text-slate-400 text-xs">Sin registros de ajuste guardados.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            logsFiltrados.forEach(log => {
+                let itemsHtml = '';
+                log.changes.forEach(ch => {
+                    const isPositive = ch.diff > 0;
+                    const badgeClass = isPositive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800';
+                    const sign = isPositive ? `+${ch.diff}` : `${ch.diff}`;
+
+                    itemsHtml += `
+                        <div class="flex justify-between items-center text-[11px] border-b border-slate-100 py-1">
+                            <span class="font-semibold text-slate-700">${ch.marca} - ${ch.modelo}</span>
+                            <div class="flex items-center gap-1.5 font-mono">
+                                <span class="text-slate-400">${ch.oldQty}➔${ch.newQty}</span>
+                                <span class="px-1.5 py-0.5 rounded font-bold ${badgeClass}">${sign} pz</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="bg-white border border-betesda-lightgreen rounded-2xl p-3 shadow-sm space-y-2">
+                        <div class="flex justify-between items-start border-b border-slate-100 pb-1.5">
+                            <div>
+                                <span class="bg-betesda-yellow/30 text-betesda-darkgreen font-mono font-bold px-2 py-0.5 rounded-lg text-[10px]">${log.loteCode}</span>
+                                <span class="text-[10px] text-slate-400 font-semibold ml-1"><i class="fa-solid fa-clock mr-0.5"></i> ${log.dateTime}</span>
+                            </div>
+                            <span class="bg-betesda-lightgreen text-betesda-darkgreen px-2 py-0.5 rounded-full font-bold text-[10px]"><i class="fa-solid fa-user text-betesda-green mr-1"></i> ${log.user}</span>
+                        </div>
+                        
+                        <div class="space-y-0.5">
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="bg-amber-50/60 p-2 rounded-xl text-[10px] text-slate-600 italic border border-amber-100">
+                            <strong>Motivo:</strong> ${log.motivo}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function showToast(msg, type="success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>
