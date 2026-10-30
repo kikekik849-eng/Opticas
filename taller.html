@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Taller - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            @page {
+                size: 80mm 200mm;
+                margin: 0mm;
+            }
+            body, html {
+                width: 80mm;
+                height: 200mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { 
+                display: block !important; 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 76mm !important; 
+                max-width: 76mm !important;
+                height: 196mm !important;
+                max-height: 196mm !important;
+                margin: 0 auto !important;
+                padding: 2mm !important; 
+                background: white !important; 
+                overflow: hidden !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Módulo de Taller</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col h-screen overflow-hidden hidden">
+        <header class="bg-betesda-green text-white shadow-md no-print border-b-4 border-betesda-yellow shrink-0 z-40">
+            <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[10px] text-betesda-lightgreen font-medium">Módulo de Taller / Laboratorio</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1600px] w-full mx-auto overflow-hidden">
+            <!-- BARRA LATERAL -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto no-print z-30">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL: 2 COLUMNAS -->
+            <main class="flex-grow p-4 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-70px)]">
+                
+                <!-- COLUMNA IZQUIERDA (5 Cols): LISTA DE ÓRDENES DE TALLER PENDIENTES -->
+                <div class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 flex flex-col space-y-3 h-full overflow-hidden">
+                    <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                        <h3 class="text-xs font-bold text-betesda-green uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-hammer text-betesda-yellow"></i> Órdenes de Taller Pendientes
+                        </h3>
+                        <span id="lblCountTaller" class="text-[10px] bg-betesda-softgreen text-betesda-darkgreen font-bold px-2.5 py-1 rounded-full border border-betesda-lightgreen font-mono">0</span>
+                    </div>
+
+                    <!-- BUSCADOR EN LISTA -->
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="busquedaTallerInput" oninput="renderizarListaTaller()" placeholder="Buscar por paciente o nota (ej. NOTA-001)..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-2 text-xs font-medium outline-none focus:border-betesda-green">
+                    </div>
+
+                    <!-- LISTA SCROLLABLE -->
+                    <div id="listaOrdenesTaller" class="flex-grow overflow-y-auto space-y-2 pr-1">
+                        <div class="p-4 text-center text-slate-400 text-xs">No hay órdenes de taller pendientes.</div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA (7 Cols): VISTA PREVIA Y REGISTRO DE ÓRDENES TERMINADAS -->
+                <div class="lg:col-span-7 bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 flex flex-col space-y-3 h-full overflow-hidden">
+                    <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2 shrink-0">
+                        <h3 class="text-xs font-bold text-betesda-green uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-eye text-betesda-yellow"></i> Vista Previa de Orden de Laboratorio
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <button id="btnMarcarTerminadoActual" onclick="marcarTerminadoActual()" disabled class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-check-double"></i> Terminado
+                            </button>
+                            <button id="btnImprimirOrdenSeleccionada" onclick="imprimirOrdenActual()" disabled class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs shadow transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-print"></i> Imprimir Orden
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CONTENEDOR DE LA VISTA PREVIA -->
+                    <div id="contenedorDetalleTaller" class="h-[230px] shrink-0 overflow-y-auto bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center text-slate-400 text-xs">
+                        <i class="fa-solid fa-glasses text-3xl mb-1 text-slate-300"></i>
+                        <span>Selecciona una orden de la lista izquierda o inferior para visualizar su información.</span>
+                    </div>
+
+                    <!-- SECCIÓN INFERIOR (CUADRO ROJO): REGISTRO DE ÓRDENES TERMINADAS / EN ESPERA -->
+                    <div class="flex-grow flex flex-col space-y-2 border-t-2 border-betesda-lightgreen pt-3 overflow-hidden">
+                        <div class="flex justify-between items-center shrink-0">
+                            <h3 class="text-xs font-bold text-betesda-green uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-check-double text-betesda-yellow"></i> Órdenes Terminadas / En Espera
+                            </h3>
+                            <span id="lblCountTerminadas" class="text-[10px] bg-emerald-50 text-betesda-green font-bold px-2 py-0.5 rounded-full border border-betesda-lightgreen font-mono">0</span>
+                        </div>
+
+                        <!-- BUSCADOR DE TERMINADAS -->
+                        <div class="relative shrink-0">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
+                            <input type="text" id="busquedaTerminadasInput" oninput="renderizarListaTerminadas()" placeholder="Buscar orden terminada por paciente o nota..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-1.5 text-xs font-medium outline-none focus:border-betesda-green">
+                        </div>
+
+                        <!-- LISTA SCROLLABLE DE TERMINADAS -->
+                        <div id="listaOrdenesTerminadas" class="flex-grow overflow-y-auto space-y-1.5 pr-1">
+                            <div class="p-3 text-center text-slate-400 text-xs">No hay órdenes terminadas registradas.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL FLOTANTE PARA CONFIRMAR NOTA TERMINADA -->
+    <div id="modalConfirmarTerminado" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-md space-y-4">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-check-double text-betesda-yellow"></i> Confirmar Orden Terminada
+                </h3>
+                <button onclick="cerrarModalTerminado()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <p id="lblTextoConfirmacionTerminado" class="text-xs text-slate-600 font-medium leading-relaxed">
+                Para confirmar que la orden está terminada, por favor escribe el número de nota/factura:
+            </p>
+
+            <div>
+                <input type="text" id="inputConfirmarNota" placeholder="Ej. NOTA-001" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-3 text-xs font-mono font-bold outline-none focus:border-betesda-green text-center tracking-wider">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalTerminado()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cancelar</button>
+                <button type="button" onclick="ejecutarMarcarTerminado()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow">Confirmar y Pasar a En Espera</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" style="display: none;"></div>
+
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        let storedUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+        let usersDB = (storedUsers && storedUsers.length > 0) ? storedUsers : [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador', modulos: ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'loggin.html'] }];
+        let currentUser = null;
+        let sidebarTimer = null;
+
+        let ventasRealizadasDB = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+        let ordenSeleccionadaActual = null;
+
+        window.onload = function() {
+            checkSession();
+            renderizarListaTaller();
+            renderizarListaTerminadas();
+        };
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (currentUser.user !== 'Admin' && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { showToast("Usuario o contraseña incorrectos", "error"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function renderizarListaTaller() {
+            const contenedor = document.getElementById('listaOrdenesTaller');
+            const lblCount = document.getElementById('lblCountTaller');
+            const query = (document.getElementById('busquedaTallerInput')?.value || '').toLowerCase().trim();
+
+            let ordenesTaller = ventasRealizadasDB.filter(v => v.items.some(item => item.tipo === 'MICA' || item.rx) && v.estadoTaller !== 'Entregado' && v.estadoTaller !== 'En Espera' && !v.tallerTerminado);
+
+            if (query) {
+                ordenesTaller = ordenesTaller.filter(v => 
+                    v.nota.toLowerCase().includes(query) || 
+                    v.paciente.toLowerCase().includes(query) ||
+                    (v.telefono && v.telefono.toLowerCase().includes(query))
+                );
+            }
+
+            lblCount.textContent = ordenesTaller.length;
+
+            if (ordenesTaller.length === 0) {
+                contenedor.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No hay órdenes de taller pendientes.</div>`;
+                return;
+            }
+
+            contenedor.innerHTML = '';
+
+            ordenesTaller.forEach(v => {
+                let esSeleccionada = ordenSeleccionadaActual && ordenSeleccionadaActual.nota === v.nota;
+                let activeClass = esSeleccionada ? 'bg-betesda-softgreen border-2 border-betesda-green shadow-sm' : 'bg-slate-50 border border-betesda-lightgreen hover:bg-betesda-softgreen/50';
+
+                let badgeEstado = (v.saldoPendiente > 0)
+                    ? `<span class="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded border border-amber-200">Pend: $${v.saldoPendiente.toFixed(2)}</span>`
+                    : `<span class="text-[9px] bg-emerald-100 text-betesda-green font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">Pagado</span>`;
+
+                contenedor.innerHTML += `
+                    <div onclick='seleccionarOrdenTaller("${v.nota}")' class="${activeClass} p-3 rounded-xl cursor-pointer transition space-y-1.5">
+                        <div class="flex justify-between items-center font-mono">
+                            <span class="font-extrabold text-betesda-darkgreen text-xs">${v.nota}</span>
+                            <span class="text-[10px] text-slate-400 font-semibold">${v.fecha}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span>${v.paciente}</span>
+                            ${badgeEstado}
+                        </div>
+                        <div class="text-[10px] text-slate-500 flex justify-between">
+                            <span>Entrega: <strong class="text-betesda-green">${v.fechaEntrega || 'N/A'}</strong></span>
+                            <span>Tel: ${v.telefono || 'S/N'}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderizarListaTerminadas() {
+            const contenedor = document.getElementById('listaOrdenesTerminadas');
+            const lblCount = document.getElementById('lblCountTerminadas');
+            const query = (document.getElementById('busquedaTerminadasInput')?.value || '').toLowerCase().trim();
+
+            let ordenesTerminadas = ventasRealizadasDB.filter(v => v.items.some(item => item.tipo === 'MICA' || item.rx) && (v.estadoTaller === 'En Espera' || v.tallerTerminado === true));
+
+            if (query) {
+                ordenesTerminadas = ordenesTerminadas.filter(v => 
+                    v.nota.toLowerCase().includes(query) || 
+                    v.paciente.toLowerCase().includes(query) ||
+                    (v.telefono && v.telefono.toLowerCase().includes(query))
+                );
+            }
+
+            if (lblCount) lblCount.textContent = ordenesTerminadas.length;
+            if (!contenedor) return;
+
+            if (ordenesTerminadas.length === 0) {
+                contenedor.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs">No hay órdenes terminadas registradas.</div>`;
+                return;
+            }
+
+            contenedor.innerHTML = '';
+
+            ordenesTerminadas.forEach(v => {
+                let esSeleccionada = ordenSeleccionadaActual && ordenSeleccionadaActual.nota === v.nota;
+                let activeClass = esSeleccionada ? 'bg-betesda-softgreen border-2 border-betesda-green shadow-sm' : 'bg-slate-50 border border-betesda-lightgreen hover:bg-betesda-softgreen/50';
+
+                let estadoBadge = v.estadoTaller === 'Entregado' 
+                    ? `<span class="text-[9px] bg-emerald-100 text-betesda-green font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">Entregado</span>`
+                    : `<span class="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-1.5 py-0.5 rounded border border-blue-200">En Espera</span>`;
+
+                contenedor.innerHTML += `
+                    <div onclick='seleccionarOrdenTerminada("${v.nota}")' class="${activeClass} p-2.5 rounded-xl cursor-pointer transition space-y-1">
+                        <div class="flex justify-between items-center font-mono">
+                            <span class="font-extrabold text-betesda-darkgreen text-xs">${v.nota}</span>
+                            ${estadoBadge}
+                        </div>
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-700">
+                            <span>${v.paciente}</span>
+                            <span class="text-[10px] text-slate-400">${v.fecha}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function seleccionarOrdenTaller(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) return;
+
+            ordenSeleccionadaActual = venta;
+            renderizarListaTaller();
+            renderizarListaTerminadas();
+
+            document.getElementById('btnImprimirOrdenSeleccionada').disabled = false;
+            document.getElementById('btnMarcarTerminadoActual').disabled = false;
+
+            mostrarDetalleEnVistaPrevia(venta);
+        }
+
+        function seleccionarOrdenTerminada(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) return;
+
+            ordenSeleccionadaActual = venta;
+            renderizarListaTaller();
+            renderizarListaTerminadas();
+
+            document.getElementById('btnImprimirOrdenSeleccionada').disabled = false;
+            document.getElementById('btnMarcarTerminadoActual').disabled = (venta.estadoTaller === 'Entregado');
+
+            mostrarDetalleEnVistaPrevia(venta);
+        }
+
+        function mostrarDetalleEnVistaPrevia(venta) {
+            let micasItems = venta.items.filter(item => item.tipo === 'MICA' || item.rx);
+
+            let detalleMicasHtml = '';
+            micasItems.forEach((item) => {
+                let rxInfo = item.rx ? `
+                    <div class="mt-2 bg-white border border-slate-300 p-2.5 rounded-xl text-xs font-mono text-slate-700 shadow-inner">
+                        <div class="font-bold text-betesda-green border-b border-slate-200 pb-1 mb-1.5 uppercase text-[11px]">GRADUACIÓN (RX) - ${item.rx.tipoArmazon || 'Armazón'}</div>
+                        <div class="overflow-x-auto w-full">
+                            <table class="w-full text-center border-collapse text-xs min-w-[280px]">
+                                <thead>
+                                    <tr class="bg-black text-white font-bold text-[10px]">
+                                        <th class="border border-black p-1">RX</th>
+                                        <th class="border border-black p-1">ESF</th>
+                                        <th class="border border-black p-1">CIL</th>
+                                        <th class="border border-black p-1">EJE</th>
+                                        <th class="border border-black p-1">A.D.D.</th>
+                                        <th class="border border-black p-1">A.O.</th>
+                                        <th class="border border-black p-1">D.I.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border border-black p-1 font-bold bg-slate-100">OD</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.esf || '0.00'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.cil || '0.00'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.eje || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.add || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.ao || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.od.di || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border border-black p-1 font-bold bg-slate-100">OI</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.esf || '0.00'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.cil || '0.00'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.eje || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.add || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.ao || '-'}</td>
+                                        <td class="border border-black p-1 font-bold">${item.rx.oi.di || '-'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ` : `<div class="italic text-slate-400 text-xs mt-1">Sin graduación específica registrada.</div>`;
+
+                detalleMicasHtml += `
+                    <div class="p-2.5 bg-white border border-betesda-lightgreen rounded-xl space-y-1 shadow-sm">
+                        <div class="font-bold text-betesda-darkgreen text-xs flex justify-between">
+                            <span><i class="fa-solid fa-glasses text-betesda-green"></i> ${item.nombre}</span>
+                            <span class="font-mono text-betesda-green">Cant: ${item.cantidad}</span>
+                        </div>
+                        ${rxInfo}
+                    </div>
+                `;
+            });
+
+            const htmlDetalle = `
+                <div class="w-full max-w-lg mx-auto bg-white border border-betesda-lightgreen rounded-2xl p-4 shadow-sm space-y-2.5 text-xs">
+                    <div class="text-center border-b-2 border-betesda-green pb-2">
+                        <h2 class="text-xs font-extrabold uppercase text-betesda-green">ÓPTICA BETESDA</h2>
+                        <h3 class="text-[11px] font-extrabold uppercase bg-betesda-green text-white py-0.5 rounded mt-1">ORDEN DE LABORATORIO</h3>
+                        <p class="font-mono font-black text-xs text-betesda-darkgreen mt-1">${venta.nota}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 bg-betesda-softgreen p-2.5 rounded-xl border border-betesda-lightgreen text-[11px]">
+                        <div><strong>Fecha Venta:</strong> ${venta.fecha} ${venta.hora}</div>
+                        <div><strong>Fecha Entrega:</strong> <span class="font-extrabold text-betesda-green underline">${venta.fechaEntrega || 'Por definir'}</span></div>
+                        <div><strong>Paciente:</strong> <span class="font-bold uppercase">${venta.paciente}</span></div>
+                        <div><strong>Teléfono:</strong> ${venta.telefono || 'N/A'}</div>
+                        <div><strong>Vendedor:</strong> ${venta.vendedor || 'Admin'}</div>
+                        <div><strong>Estatus:</strong> <span class="uppercase font-bold text-betesda-green">${venta.estadoTaller || 'En Taller'}</span></div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <div class="font-bold uppercase text-[10px] text-slate-600">Especificaciones y Micas:</div>
+                        <div class="space-y-2 max-h-40 overflow-y-auto">${detalleMicasHtml}</div>
+                    </div>
+                </div>
+            `;
+
+            const contenedor = document.getElementById('contenedorDetalleTaller');
+            contenedor.innerHTML = htmlDetalle;
+            contenedor.classList.remove('flex', 'items-center', 'justify-center');
+        }
+
+        function marcarTerminadoActual() {
+            if (!ordenSeleccionadaActual) return;
+            document.getElementById('lblTextoConfirmacionTerminado').innerHTML = `Para confirmar que la orden <strong class="text-betesda-green font-mono">${ordenSeleccionadaActual.nota}</strong> está terminada, por favor escribe el número de nota/factura:`;
+            document.getElementById('inputConfirmarNota').value = '';
+            document.getElementById('modalConfirmarTerminado').classList.remove('hidden');
+        }
+
+        function cerrarModalTerminado() {
+            document.getElementById('modalConfirmarTerminado').classList.add('hidden');
+        }
+
+        function ejecutarMarcarTerminado() {
+            if (!ordenSeleccionadaActual) return;
+            const notaIngresada = document.getElementById('inputConfirmarNota').value.trim();
+
+            if (notaIngresada.toUpperCase() !== ordenSeleccionadaActual.nota.toUpperCase()) {
+                alert("El número de nota ingresado no coincide. No se pudo completar la acción.");
+                return;
+            }
+
+            const venta = ventasRealizadasDB.find(v => v.nota === ordenSeleccionadaActual.nota);
+            if (venta) {
+                venta.estadoTaller = 'En Espera';
+                venta.tallerTerminado = true;
+                localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            }
+
+            cerrarModalTerminado();
+            showToast(`Orden ${ordenSeleccionadaActual.nota} terminada y cambiada a En Espera`, "success");
+            
+            ordenSeleccionadaActual = null;
+            document.getElementById('btnImprimirOrdenSeleccionada').disabled = true;
+            document.getElementById('btnMarcarTerminadoActual').disabled = true;
+            document.getElementById('contenedorDetalleTaller').innerHTML = `
+                <i class="fa-solid fa-glasses text-3xl mb-1 text-slate-300"></i>
+                <span>Selecciona una orden de la lista izquierda o inferior para visualizar su información.</span>
+            `;
+            document.getElementById('contenedorDetalleTaller').classList.add('flex', 'items-center', 'justify-center');
+            renderizarListaTaller();
+            renderizarListaTerminadas();
+        }
+
+        function imprimirOrdenActual() {
+            if (!ordenSeleccionadaActual) return;
+            const venta = ordenSeleccionadaActual;
+
+            let micasItems = venta.items.filter(item => item.tipo === 'MICA' || item.rx);
+            if (micasItems.length === 0) return;
+
+            let detalleMicasHtml = '';
+            micasItems.forEach((item) => {
+                let rxInfo = item.rx ? `
+                    <div style="margin-top: 6px; border: 1px solid #000; padding: 6px; font-size: 15px; font-family: monospace;">
+                        <div style="font-weight: 900; border-bottom: 1px solid #000; margin-bottom: 4px; text-transform: uppercase; font-size: 14px;">GRADUACIÓN (RX) - ${item.rx.tipoArmazon || 'Armazón'}</div>
+                        <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 15px; margin-top: 3px;">
+                            <thead>
+                                <tr style="background: #ffffff; color: #000000; border-bottom: 2px solid #000;">
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">RX</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">ESF</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">CIL</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">EJE</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">A.D.D.</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">A.O.</th>
+                                    <th style="border: 1px solid #000; padding: 3px; font-weight: 900; font-size: 14px;">D.I.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">OD</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.esf || '0.00'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.cil || '0.00'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.eje || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.add || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.ao || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.od.di || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">OI</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.esf || '0.00'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.cil || '0.00'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.eje || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.add || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.ao || '-'}</td>
+                                    <td style="border: 1px solid #000; padding: 3px; font-weight: bold;">${item.rx.oi.di || '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                ` : `<div style="font-style: italic; font-size: 11px; margin-top: 4px;">Sin graduación específica registrada.</div>`;
+
+                detalleMicasHtml += `
+                    <div style="margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+                        <div><strong>Concepto:</strong> <span style="font-size: 13px; font-weight: 900;">${item.nombre}</span></div>
+                        <div><strong>Cantidad:</strong> ${item.cantidad}</div>
+                        ${rxInfo}
+                    </div>
+                `;
+            });
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: sans-serif; font-size: 12px; font-weight: bold; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3;">
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 120px; max-height: 75px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 15px; text-transform: uppercase; font-weight: 900; color: #000;">ÓPTICA BETESDA</h2>
+                        <h3 style="margin: 4px 0 0 0; font-size: 12px; font-weight: 900; border: 1.5px solid #000; color: #000; padding: 2px; text-transform: uppercase;">ORDEN DE LABORATORIO</h3>
+                        <p style="margin: 3px 0 0 0; font-size: 13px; font-weight: 900; color: #000;">${venta.nota}</p>
+                    </div>
+
+                    <div style="font-size: 12px; line-height: 1.4; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px;">
+                        <div><strong>Fecha de Venta:</strong> ${venta.fecha} ${venta.hora}</div>
+                        <div><strong>Fecha de Entrega:</strong> <span style="font-size: 13px; font-weight: 900; text-decoration: underline;">${venta.fechaEntrega || 'Por definir'}</span></div>
+                        <div><strong>Paciente:</strong> <span style="font-size: 13px; font-weight: 900; text-transform: uppercase;">${venta.paciente}</span></div>
+                        <div><strong>Teléfono:</strong> ${venta.telefono || 'N/A'}</div>
+                    </div>
+
+                    <div style="margin-bottom: 6px;">
+                        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 4px;">Detalle de Micas y Dioptrías:</div>
+                        ${detalleMicasHtml}
+                    </div>
+
+                    <div style="border-top: 1px solid #000; padding-top: 6px; margin-top: 8px; text-align: center; font-size: 11px;">
+                        <div>Observaciones / Taller:</div>
+                        <div style="border: 1px solid #000; height: 35px; margin-top: 3px;"></div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 10px; font-size: 11px; font-weight: bold; border-top: 1px dashed #000; padding-top: 4px;">
+                        Óptica Betesda - Control de Taller
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => { window.print(); }, 200);
+            showToast(`Imprimiendo Orden de Laboratorio para ${venta.nota}`, "success");
+        }
+
+        function showToast(msg, type="success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>

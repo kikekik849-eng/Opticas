@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Etiquetado Rápido - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Librería para Renderizar Código de Barras Real -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso y Módulos del Sistema</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL -->
+    <div id="appContainer" class="flex flex-col min-h-screen hidden">
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow sticky top-0 z-40">
+            <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[11px] text-betesda-lightgreen font-medium">Módulo de Etiquetado Rápido</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1500px] w-full mx-auto">
+            <!-- BARRA LATERAL -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-hidden">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL: DISTRIBUCIÓN 50% / 50% VERTICAL -->
+            <main class="flex-grow p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch w-full">
+                
+                <!-- COLUMNA IZQUIERDA: FORMULARIO -->
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-6 sm:p-8 flex flex-col justify-between space-y-5 w-full">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center pb-2 border-b border-betesda-lightgreen">
+                            <h2 class="text-base font-extrabold text-betesda-green flex items-center gap-2">
+                                <i class="fa-solid fa-tags text-betesda-yellow"></i> Generación de Etiquetas por Lote
+                            </h2>
+                            <span class="bg-betesda-yellow text-betesda-darkgreen text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                                Etiquetado Rápido
+                            </span>
+                        </div>
+
+                        <!-- 1. TIPO DE PRODUCTO -->
+                        <div>
+                            <label class="block text-xs font-extrabold text-betesda-green uppercase tracking-wide mb-1.5">1. Tipo de Producto</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <button type="button" id="btnTypeArmazon" onclick="selectProductType('1')" class="flex items-center justify-center gap-1.5 p-2.5 rounded-2xl border-2 border-betesda-green bg-betesda-softgreen text-betesda-green font-bold text-xs transition shadow-sm">
+                                    <i class="fa-solid fa-glasses text-base"></i> Armazón
+                                </button>
+                                <button type="button" id="btnTypeAccesorio" onclick="selectProductType('2')" class="flex items-center justify-center gap-1.5 p-2.5 rounded-2xl border-2 border-slate-200 bg-white text-slate-500 font-bold text-xs transition hover:bg-slate-50">
+                                    <i class="fa-solid fa-spray-can text-base"></i> Accesorio
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- BÚSQUEDA POR FACTURA / LOTE DE AJUSTE -->
+                        <div class="bg-betesda-softgreen p-3 rounded-2xl border-2 border-betesda-lightgreen space-y-1 overflow-hidden">
+                            <div class="flex justify-between items-center gap-2">
+                                <label class="text-xs font-extrabold text-betesda-green uppercase tracking-wide flex items-center gap-1.5 truncate">
+                                    <i class="fa-solid fa-magnifying-glass text-betesda-yellow shrink-0"></i> Buscar Factura / Lote de Ajuste
+                                </label>
+                                <span id="labelFilterType" class="text-[10px] text-betesda-green font-bold uppercase shrink-0">(Solo Armazones)</span>
+                            </div>
+                            <select id="selectFacturaLote" onchange="cargarDatosDesdeFactura()" class="w-full max-w-full truncate bg-white border-2 border-betesda-green/40 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-betesda-green transition cursor-pointer">
+                                <option value="">-- Selecciona Factura o Lote Registrado --</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. MARCA / CATEGORÍA -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-extrabold text-betesda-green uppercase tracking-wide">
+                                    2. Marca / Categoría <span id="brandTag" class="text-[10px] text-betesda-gold">(Armazones)</span>
+                                </label>
+                                <span class="text-[10px] text-betesda-green/70 font-semibold">Sincronizado con Registro</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="inputMarca" list="marcasList" oninput="updateModelosDatalist(this.value); updatePreview();" placeholder="Escribe o selecciona marca..." class="flex-grow bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl px-4 py-2 text-xs font-medium outline-none focus:border-betesda-green transition">
+                                <datalist id="marcasList"></datalist>
+                                <div id="codeMarca" class="bg-amber-50 border-2 border-amber-300 text-amber-800 text-xs font-bold px-4 py-2 rounded-2xl flex items-center justify-center min-w-[70px]">
+                                    Cód
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. MODELO / NOMBRE -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-extrabold text-betesda-green uppercase tracking-wide">3. Modelo / Nombre</label>
+                                <span class="text-[10px] text-betesda-green/70 font-semibold">Sincronizado con Registro</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <input type="text" id="inputModelo" list="modelosList" oninput="updatePreview()" placeholder="Escribe o selecciona modelo..." class="flex-grow bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl px-4 py-2 text-xs font-medium outline-none focus:border-betesda-green transition">
+                                <datalist id="modelosList"></datalist>
+                                <div id="codeModelo" class="bg-amber-50 border-2 border-amber-300 text-amber-800 text-xs font-bold px-4 py-2 rounded-2xl flex items-center justify-center min-w-[70px]">
+                                    Sub
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. NÚMERO DE LOTE Y DÍGITOS EXTRAÍDOS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-extrabold text-betesda-green uppercase tracking-wide mb-1">4. Número de Lote</label>
+                                <input type="text" id="inputLote" oninput="updatePreview()" placeholder="EJ: L9821A" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl px-4 py-2 text-xs font-medium outline-none focus:border-betesda-green transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-extrabold text-betesda-green uppercase tracking-wide mb-1">Dígitos Extraídos (1° + Últ. 3)</label>
+                                <div class="relative">
+                                    <input type="text" id="extractedDigits" readonly placeholder="Ej: L821A" class="w-full bg-betesda-softgreen border-2 border-betesda-lightgreen text-betesda-darkgreen font-mono font-bold rounded-2xl px-4 py-2 text-xs outline-none cursor-default">
+                                    <i class="fa-solid fa-caret-down absolute right-3 top-3 text-betesda-green text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. FECHA DE COMPRA Y 6. EXISTENCIAS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-extrabold text-betesda-green uppercase tracking-wide mb-1">5. Fecha de Compra / Ajuste</label>
+                                <input type="date" id="inputFecha" onchange="updatePreview()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl px-4 py-2 text-xs font-medium outline-none focus:border-betesda-green transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-extrabold text-betesda-green uppercase tracking-wide mb-1">6. Existencias (Cant. Lote)</label>
+                                <input type="number" id="inputCantidad" value="1" min="1" oninput="updatePreview()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl px-4 py-2 text-xs font-medium outline-none focus:border-betesda-green transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA: DISTRIBUCIÓN EXACTA 50% / 50% VERTICAL -->
+                <div class="flex flex-col gap-6 w-full h-full">
+                    
+                    <!-- 1. VISTA PREVIA (AJUSTADA PARA MOSTRAR EL BOTÓN PERFECTAMENTE) -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-4 sm:p-5 flex flex-col justify-between w-full h-[calc(50%-12px)]">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center pb-1.5 border-b border-betesda-lightgreen">
+                                <h2 class="text-xs font-extrabold text-betesda-green flex items-center gap-1.5">
+                                    <i class="fa-solid fa-eye text-betesda-yellow"></i> Vista Previa
+                                </h2>
+                                <span class="bg-betesda-yellow text-betesda-darkgreen text-[9px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                                    En Tiempo Real
+                                </span>
+                            </div>
+
+                            <!-- ESTRUCTURA DEL CÓDIGO SKU -->
+                            <div class="bg-betesda-softgreen border border-betesda-lightgreen rounded-xl p-2 space-y-1">
+                                <span class="block text-[10px] font-extrabold text-betesda-green uppercase">Estructura del Código SKU:</span>
+                                <div class="flex flex-wrap gap-1 font-mono text-[11px] font-bold">
+                                    <span id="skuType" class="bg-betesda-green text-white px-1.5 py-0.5 rounded">1</span>
+                                    <span id="skuBrand" class="bg-betesda-yellow text-betesda-darkgreen px-1.5 py-0.5 rounded">01</span>
+                                    <span id="skuModel" class="bg-betesda-lightgreen text-betesda-darkgreen px-1.5 py-0.5 rounded">01</span>
+                                    <span id="skuExtra" class="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded">X000</span>
+                                    <span id="skuDate" class="bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded">211026</span>
+                                    <span id="skuQty" class="bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">01</span>
+                                </div>
+                            </div>
+
+                            <!-- CARD ETIQUETA VISTA PREVIA -->
+                            <div class="border-2 border-dashed border-betesda-lightgreen rounded-xl p-2 flex justify-center items-center bg-slate-50/50">
+                                <div class="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm w-full max-w-[210px] text-center space-y-0.5">
+                                    <div id="prevMarca" class="font-bold text-[11px] uppercase text-slate-800 tracking-wider">MARCA</div>
+                                    <div id="prevModelo" class="text-[9px] text-slate-500 font-medium">Modelo General</div>
+                                    
+                                    <!-- CÓDIGO DE BARRAS GENERADO DINÁMICAMENTE -->
+                                    <div class="py-0.5 flex justify-center">
+                                        <svg id="barcodeSvg" class="max-w-full h-8"></svg>
+                                    </div>
+
+                                    <div class="flex justify-between items-center text-[9px] font-mono pt-0.5">
+                                        <span id="prevSKUFull" class="text-slate-700 font-bold">10101X00021102601</span>
+                                        <span id="prevCantBadge" class="bg-betesda-yellow text-betesda-darkgreen font-sans font-bold text-[8px] px-1 py-0.5 rounded">Cant: 1</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BOTÓN DE ACCIÓN (GUARDAR E IMPRIMIR) -->
+                        <div class="pt-1">
+                            <button onclick="guardarEImprimirEtiqueta()" class="w-full bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold py-2 px-4 rounded-xl shadow transition flex items-center justify-center gap-2 text-xs">
+                                <i class="fa-solid fa-floppy-disk text-betesda-yellow"></i>
+                                <span id="btnPrintText">Guardar e Imprimir 1</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. HISTORIAL DE ETIQUETAS GUARDADAS (OCUPA EL OTRO 50% DE LA ALTURA) -->
+                    <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-5 sm:p-6 flex flex-col justify-between w-full h-[calc(50%-12px)]">
+                        <div class="flex justify-between items-center pb-2 border-b border-betesda-lightgreen shrink-0">
+                            <h3 class="text-xs font-extrabold text-betesda-green uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock-rotate-left text-betesda-yellow"></i> Historial de Etiquetas Guardadas
+                            </h3>
+                            <button onclick="limpiarHistorialEtiquetas()" class="text-[10px] text-rose-600 hover:underline font-bold">Limpiar</button>
+                        </div>
+                        <div id="historialEtiquetasContainer" class="flex-grow overflow-y-auto space-y-2 pr-1 pt-2">
+                            <div class="text-center text-xs text-slate-400 py-3">No hay etiquetas guardadas aún.</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICACIÓN -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        let usersDB = JSON.parse(localStorage.getItem('opti_betesda_users')) || [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador', modulos: ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'loggin.html'] }];
+        let invoicesHistory = JSON.parse(localStorage.getItem('opti_betesda_invoices')) || [];
+        let history = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
+        let database = JSON.parse(localStorage.getItem('opti_betesda_db')) || { "1": [], "2": [], "3": [] };
+        let modelosMap = JSON.parse(localStorage.getItem('opti_betesda_modelos')) || {};
+        let etiquetasGuardadasDB = JSON.parse(localStorage.getItem('opti_betesda_etiquetas_guardadas')) || [];
+        
+        let currentUser = null;
+        let sidebarTimer = null;
+        let selectedType = '1';
+
+        window.onload = function() {
+            checkSession();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inputFecha').value = today;
+            selectProductType('1');
+            renderHistorialEtiquetas();
+        };
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            const texts = sidebar.querySelectorAll('.sidebar-text');
+            texts.forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            const texts = sidebar.querySelectorAll('.sidebar-text');
+            texts.forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (currentUser.user !== 'Admin' && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+            } else {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { alert("Datos incorrectos"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function updateDatalists() {
+            database = JSON.parse(localStorage.getItem('opti_betesda_db')) || { "1": [], "2": [], "3": [] };
+            modelosMap = JSON.parse(localStorage.getItem('opti_betesda_modelos')) || {};
+
+            const marcasList = document.getElementById('marcasList');
+            if (!marcasList) return;
+            marcasList.innerHTML = '';
+            
+            const currentTypeMarcas = database[selectedType] || [];
+            currentTypeMarcas.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.nombre;
+                marcasList.appendChild(opt);
+            });
+        }
+
+        function updateModelosDatalist(marcaNombre) {
+            database = JSON.parse(localStorage.getItem('opti_betesda_db')) || { "1": [], "2": [], "3": [] };
+            modelosMap = JSON.parse(localStorage.getItem('opti_betesda_modelos')) || {};
+
+            const modelosList = document.getElementById('modelosList');
+            if (!modelosList) return;
+            modelosList.innerHTML = '';
+            
+            if (!marcaNombre) return;
+            marcaNombre = marcaNombre.trim().toLowerCase();
+
+            const listMarcas = database[selectedType] || [];
+            let foundMarca = listMarcas.find(m => m.nombre.trim().toLowerCase() === marcaNombre);
+            if (!foundMarca) return;
+
+            const key = `${selectedType}_${foundMarca.id}`;
+            const currentModelos = modelosMap[key] || [];
+            
+            currentModelos.forEach(mod => {
+                const opt = document.createElement('option');
+                opt.value = mod.nombre;
+                modelosList.appendChild(opt);
+            });
+        }
+
+        function selectProductType(type) {
+            selectedType = type;
+            const btnArmazon = document.getElementById('btnTypeArmazon');
+            const btnAccesorio = document.getElementById('btnTypeAccesorio');
+            const brandTag = document.getElementById('brandTag');
+            const labelFilterType = document.getElementById('labelFilterType');
+
+            const activeClass = 'flex items-center justify-center gap-1.5 p-2.5 rounded-2xl border-2 border-betesda-green bg-betesda-softgreen text-betesda-green font-bold text-xs transition shadow-sm';
+            const inactiveClass = 'flex items-center justify-center gap-1.5 p-2.5 rounded-2xl border-2 border-slate-200 bg-white text-slate-500 font-bold text-xs transition hover:bg-slate-50';
+
+            btnArmazon.className = type === '1' ? activeClass : inactiveClass;
+            btnAccesorio.className = type === '2' ? activeClass : inactiveClass;
+
+            if (type === '1') {
+                brandTag.textContent = '(Armazones)';
+                if (labelFilterType) labelFilterType.textContent = '(Solo Armazones)';
+            } else {
+                brandTag.textContent = '(Accesorios)';
+                if (labelFilterType) labelFilterType.textContent = '(Solo Accesorios)';
+            }
+
+            document.getElementById('inputMarca').value = '';
+            document.getElementById('inputModelo').value = '';
+            document.getElementById('inputLote').value = '';
+
+            poblarSelectorFacturas(type);
+            updateDatalists();
+            updatePreview();
+        }
+
+        function poblarSelectorFacturas(typeFilter) {
+            invoicesHistory = JSON.parse(localStorage.getItem('opti_betesda_invoices')) || [];
+            let existenciasDB = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || [];
+            etiquetasGuardadasDB = JSON.parse(localStorage.getItem('opti_betesda_etiquetas_guardadas')) || [];
+            
+            const select = document.getElementById('selectFacturaLote');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">-- Selecciona Factura o Lote Registrado --</option>';
+
+            const fuenteDatos = [];
+
+            if (invoicesHistory && invoicesHistory.length > 0) {
+                invoicesHistory.forEach(inv => {
+                    if (inv.items && Array.isArray(inv.items)) {
+                        inv.items.forEach(item => {
+                            fuenteDatos.push({
+                                origen: 'FACTURA',
+                                folio: inv.folio || 'S/F',
+                                fecha: inv.fecha || '',
+                                lote: item.lote || 'S/N',
+                                marca: item.marca || 'GENÉRICA',
+                                modelo: item.modelo || 'MODELO',
+                                cant: parseInt(item.cant) || 1,
+                                tipo: String(item.tipo || '1')
+                            });
+                        });
+                    }
+                });
+            }
+
+            if (existenciasDB && existenciasDB.length > 0) {
+                existenciasDB.forEach(item => {
+                    if (item.folio === 'AJUSTE' || (item.lote && item.lote.startsWith('AJU-'))) {
+                        let tipoNum = '1';
+                        if (item.tipo === 'Accesorio' || item.tipo === '2') tipoNum = '2';
+                        if (item.tipo === 'Lente de Contacto' || item.tipo === 'Lente C.' || item.tipo === '3') tipoNum = '3';
+
+                        const cantidadAjuste = Math.abs(parseInt(item.cantidad) || 1);
+
+                        fuenteDatos.push({
+                            origen: 'AJUSTE',
+                            folio: item.lote || 'AJUSTE',
+                            fecha: item.fecha || '',
+                            lote: item.lote || 'AJUSTE',
+                            marca: item.marca || 'GENÉRICA',
+                            modelo: item.modelo || 'MODELO',
+                            cant: cantidadAjuste,
+                            tipo: tipoNum
+                        });
+                    }
+                });
+            }
+
+            const itemsFiltrados = fuenteDatos.filter(item => {
+                if (item.tipo !== typeFilter) return false;
+                
+                const yaImpreso = etiquetasGuardadasDB.some(etq => 
+                    etq.lote.toLowerCase() === item.lote.toLowerCase() && 
+                    etq.marca.toLowerCase() === item.marca.toLowerCase() && 
+                    etq.modelo.toLowerCase() === item.modelo.toLowerCase()
+                );
+
+                return !yaImpreso;
+            });
+
+            if (itemsFiltrados.length === 0) {
+                let nombreTipo = 'Armazones';
+                if (typeFilter === '2') nombreTipo = 'Accesorios';
+                select.innerHTML += `<option value="" disabled>No hay lotes pendientes de ${nombreTipo}</option>`;
+                return;
+            }
+
+            itemsFiltrados.forEach(dataObj => {
+                const jsonStr = JSON.stringify(dataObj);
+                const tagOrigen = dataObj.origen === 'AJUSTE' ? `[AJUSTE]` : `[FAC: ${dataObj.folio}]`;
+                
+                select.innerHTML += `
+                    <option value='${jsonStr}'>${tagOrigen} Lote: ${dataObj.lote} | ${dataObj.marca} - ${dataObj.modelo}</option>
+                `;
+            });
+        }
+
+        function cargarDatosDesdeFactura() {
+            const selectVal = document.getElementById('selectFacturaLote').value;
+            if (!selectVal) return;
+
+            try {
+                const data = JSON.parse(selectVal);
+
+                document.getElementById('inputMarca').value = data.marca;
+                document.getElementById('inputModelo').value = data.modelo;
+                document.getElementById('inputLote').value = data.lote;
+
+                if (data.fecha) document.getElementById('inputFecha').value = data.fecha;
+                if (data.cant) document.getElementById('inputCantidad').value = data.cant;
+
+                updateModelosDatalist(data.marca);
+                updatePreview();
+            } catch (e) {
+                console.error("Error al procesar el lote seleccionado:", e);
+            }
+        }
+
+        function getExtractedLoteDigits(loteStr) {
+            if (!loteStr) return 'X000';
+            const clean = loteStr.trim();
+            if (clean.length === 0) return 'X000';
+            if (clean.length <= 4) return clean.toUpperCase();
+            const firstChar = clean.charAt(0);
+            const lastThree = clean.slice(-3);
+            return (firstChar + lastThree).toUpperCase();
+        }
+
+        function formatDateCode(dateStr) {
+            if (!dateStr) return '211026';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return '211026';
+            const yy = parts[0].slice(-2);
+            const mm = parts[1];
+            const dd = parts[2];
+            return `${dd}${mm}${yy}`;
+        }
+
+        function getBrandAndModelCodes(marcaStr, modeloStr) {
+            database = JSON.parse(localStorage.getItem('opti_betesda_db')) || { "1": [], "2": [], "3": [] };
+            modelosMap = JSON.parse(localStorage.getItem('opti_betesda_modelos')) || {};
+
+            let codeM = '01';
+            let codeMod = '01';
+
+            if (!marcaStr) return { codeM: '00', codeMod: '00' };
+            marcaStr = marcaStr.trim();
+
+            const listMarcas = database[selectedType] || [];
+            let foundMarca = listMarcas.find(m => m.nombre.trim().toLowerCase() === marcaStr.toLowerCase());
+
+            if (foundMarca) {
+                codeM = foundMarca.id;
+            } else {
+                codeM = String(listMarcas.length + 1).padStart(2, '0');
+            }
+
+            if (!modeloStr) return { codeM, codeMod: '00' };
+            modeloStr = modeloStr.trim();
+
+            const key = `${selectedType}_${codeM}`;
+            const listModelos = modelosMap[key] || [];
+            let foundModelo = listModelos.find(m => m.nombre.trim().toLowerCase() === modeloStr.toLowerCase());
+
+            if (foundModelo) {
+                codeMod = foundModelo.subNum;
+            } else {
+                codeMod = String(listModelos.length + 1).padStart(2, '0');
+            }
+
+            return { codeM, codeMod };
+        }
+
+        function updatePreview() {
+            const marca = document.getElementById('inputMarca').value.trim();
+            const modelo = document.getElementById('inputModelo').value.trim();
+            const lote = document.getElementById('inputLote').value.trim();
+            const fecha = document.getElementById('inputFecha').value;
+            const cantVal = parseInt(document.getElementById('inputCantidad').value) || 1;
+
+            const digitsLote = getExtractedLoteDigits(lote);
+            document.getElementById('extractedDigits').value = digitsLote === 'X000' ? 'Ej: L821A' : digitsLote;
+
+            const { codeM, codeMod } = getBrandAndModelCodes(marca, modelo);
+
+            document.getElementById('codeMarca').textContent = codeM;
+            document.getElementById('codeModelo').textContent = codeMod;
+
+            const dateCode = formatDateCode(fecha);
+            const qtyCode = String(cantVal).padStart(2, '0');
+
+            document.getElementById('skuType').textContent = selectedType;
+            document.getElementById('skuBrand').textContent = codeM;
+            document.getElementById('skuModel').textContent = codeMod;
+            document.getElementById('skuExtra').textContent = digitsLote;
+            document.getElementById('skuDate').textContent = dateCode;
+            document.getElementById('skuQty').textContent = qtyCode;
+
+            const fullSKU = `${selectedType}${codeM}${codeMod}${digitsLote}${dateCode}${qtyCode}`;
+
+            document.getElementById('prevMarca').textContent = (marca || 'MARCA').toUpperCase();
+            document.getElementById('prevModelo').textContent = modelo || 'Modelo General';
+            document.getElementById('prevSKUFull').textContent = fullSKU;
+            document.getElementById('prevCantBadge').textContent = `Cant: ${cantVal}`;
+
+            document.getElementById('btnPrintText').textContent = `Guardar e Imprimir ${cantVal}`;
+
+            try {
+                JsBarcode("#barcodeSvg", fullSKU, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 35,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch (e) {
+                console.log("Error generando barcode:", e);
+            }
+        }
+
+        function guardarEImprimirEtiqueta() {
+            const marca = document.getElementById('inputMarca').value.trim();
+            const modelo = document.getElementById('inputModelo').value.trim();
+            const lote = document.getElementById('inputLote').value.trim();
+            const sku = document.getElementById('prevSKUFull').textContent;
+            const cant = parseInt(document.getElementById('inputCantidad').value) || 1;
+
+            if (!marca || !modelo || !lote) {
+                alert("Por favor completa los campos de Marca, Modelo y Lote.");
+                return;
+            }
+
+            const { codeM, codeMod } = getBrandAndModelCodes(marca, modelo);
+            
+            if (!database[selectedType]) database[selectedType] = [];
+            if (!database[selectedType].some(m => m.id === codeM)) {
+                database[selectedType].push({ id: codeM, nombre: marca });
+                localStorage.setItem('opti_betesda_db', JSON.stringify(database));
+            }
+
+            const key = `${selectedType}_${codeM}`;
+            if (!modelosMap[key]) modelosMap[key] = [];
+            if (!modelosMap[key].some(m => m.subNum === codeMod)) {
+                modelosMap[key].push({ subNum: codeMod, nombre: modelo });
+                localStorage.setItem('opti_betesda_modelos', JSON.stringify(modelosMap));
+            }
+
+            const nuevaEtiqueta = {
+                fechaHora: new Date().toLocaleString('es-MX'),
+                marca: marca.toUpperCase(),
+                modelo: modelo,
+                lote: lote,
+                sku: sku,
+                cant: cant
+            };
+
+            etiquetasGuardadasDB.unshift(nuevaEtiqueta);
+            localStorage.setItem('opti_betesda_etiquetas_guardadas', JSON.stringify(etiquetasGuardadasDB));
+            
+            renderHistorialEtiquetas();
+            poblarSelectorFacturas(selectedType);
+            imprimirLoteEtiquetas(marca, modelo, sku, cant);
+
+            showToast("Etiqueta guardada e impresa con éxito", "success");
+            document.getElementById('selectFacturaLote').value = '';
+            document.getElementById('inputMarca').value = '';
+            document.getElementById('inputModelo').value = '';
+            document.getElementById('inputLote').value = '';
+            updateDatalists();
+            updatePreview();
+        }
+
+        function imprimirLoteEtiquetas(marca, modelo, sku, cant) {
+            const printWin = window.open('', '_blank');
+            printWin.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Imprimir Etiqueta</title>
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+                        .label-box { border: 1px dashed #333; padding: 8px; width: 220px; text-align: center; box-sizing: border-box; }
+                        .brand { font-weight: bold; font-size: 11px; text-transform: uppercase; }
+                        .model { font-size: 9px; color: #555; margin-bottom: 4px; }
+                        .sku { font-family: monospace; font-size: 9px; font-weight: bold; margin-top: 4px; }
+                    </style>
+                </head>
+                <body>
+                    ${Array(cant).fill().map((_, i) => `
+                        <div class="label-box">
+                            <div class="brand">${marca}</div>
+                            <div class="model">${modelo}</div>
+                            <svg class="bc-${i}"></svg>
+                            <div class="sku">${sku}</div>
+                        </div>
+                    `).join('')}
+
+                    <script>
+                        window.onload = function() {
+                            for(let i=0; i<${cant}; i++) {
+                                JsBarcode(".bc-" + i, "${sku}", { format: "CODE128", width: 1.2, height: 35, displayValue: false, margin: 0 });
+                            }
+                            window.print();
+                            setTimeout(() => { window.close(); }, 500);
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWin.document.close();
+        }
+
+        function cargarEtiquetaEnVistaPrevia(marca, modelo, lote, cant) {
+            document.getElementById('inputMarca').value = marca;
+            document.getElementById('inputModelo').value = modelo;
+            document.getElementById('inputLote').value = lote;
+            document.getElementById('inputCantidad').value = cant;
+
+            updateModelosDatalist(marca);
+            updatePreview();
+            showToast("Etiqueta cargada en vista previa", "info");
+        }
+
+        function reimprimirEtiquetaHistorial(marca, modelo, sku, cant) {
+            imprimirLoteEtiquetas(marca, modelo, sku, cant);
+            showToast("Reimprimiendo lote de etiquetas...", "success");
+        }
+
+        function renderHistorialEtiquetas() {
+            const container = document.getElementById('historialEtiquetasContainer');
+            if (!container) return;
+
+            etiquetasGuardadasDB = JSON.parse(localStorage.getItem('opti_betesda_etiquetas_guardadas')) || [];
+
+            if (etiquetasGuardadasDB.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-slate-400 py-3">No hay etiquetas guardadas aún.</div>`;
+                return;
+            }
+
+            let html = '';
+            etiquetasGuardadasDB.forEach((item, idx) => {
+                html += `
+                    <div onclick="cargarEtiquetaEnVistaPrevia('${item.marca}', '${item.modelo}', '${item.lote}', ${item.cant})" class="bg-white p-2.5 rounded-xl border border-slate-200 hover:border-betesda-green cursor-pointer text-xs space-y-1 shadow-sm transition">
+                        <div class="flex justify-between items-center font-bold text-betesda-darkgreen">
+                            <span><i class="fa-solid fa-tag text-betesda-green"></i> ${item.marca} - ${item.modelo}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] bg-betesda-lightgreen text-betesda-darkgreen px-1.5 py-0.5 rounded font-mono">Cant: ${item.cant}</span>
+                                <button type="button" onclick="event.stopPropagation(); reimprimirEtiquetaHistorial('${item.marca}', '${item.modelo}', '${item.sku}', ${item.cant})" class="bg-betesda-green hover:bg-betesda-darkgreen text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow transition flex items-center gap-1">
+                                    <i class="fa-solid fa-print"></i> Reimprimir
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 font-mono flex justify-between items-center">
+                            <span>Lote: <strong>${item.lote}</strong> | SKU: <strong>${item.sku}</strong></span>
+                        </div>
+                        <div class="text-[9px] text-slate-400 text-right">${item.fechaHora}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function limpiarHistorialEtiquetas() {
+            if (confirm("¿Estás seguro de limpiar el historial de etiquetas guardadas? Al limpiar el historial, los lotes volverán a aparecer en el selector.")) {
+                etiquetasGuardadasDB = [];
+                localStorage.removeItem('opti_betesda_etiquetas_guardadas');
+                renderHistorialEtiquetas();
+                poblarSelectorFacturas(selectedType);
+                showToast("Historial limpiado", "info");
+            }
+        }
+
+        function showToast(msg, type="success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>

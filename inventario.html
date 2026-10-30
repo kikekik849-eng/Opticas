@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Facturas - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso y Módulos del Sistema</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INTERFAZ PRINCIPAL -->
+    <div id="appContainer" class="flex flex-col h-screen overflow-hidden hidden">
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow shrink-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-lg text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white uppercase tracking-tight">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[10px] text-betesda-lightgreen font-medium">Panel Administrativo</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto overflow-hidden">
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-2 space-y-2 shrink-0 overflow-hidden">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-1 whitespace-nowrap">Navegación</div>
+                <a href="index.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-sm w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+            </aside>
+
+            <main class="flex-grow p-3 sm:p-4 space-y-4 overflow-y-auto">
+                <!-- FORMULARIO PRINCIPAL DE REGISTRO COMPACTO -->
+                <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 sm:p-5">
+                    <h2 class="text-sm font-bold text-betesda-green mb-3 pb-2 border-b border-betesda-lightgreen flex justify-between items-center">
+                        <span><i class="fa-solid fa-file-invoice-dollar text-betesda-yellow mr-1.5"></i> Captura de Factura e Inventario</span>
+                        <span class="text-[10px] text-slate-400 font-semibold">Óptica Betesda</span>
+                    </h2>
+                    <form id="invoiceForm" onsubmit="event.preventDefault(); validateAndSaveInvoice();" class="space-y-3">
+                        
+                        <!-- ENCABEZADO DE FACTURA COMPACTO -->
+                        <div class="bg-betesda-softgreen p-3 rounded-xl border border-betesda-lightgreen grid grid-cols-2 sm:grid-cols-6 gap-2.5 text-xs">
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Tipo Entrada</label>
+                                <select id="invTipoEntrada" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs font-bold text-betesda-darkgreen">
+                                    <option value="Entrada">Entrada</option>
+                                    <option value="Entrada por ajuste">Por ajuste</option>
+                                    <option value="Entrada por devolucion">Por devolución</option>
+                                    <option value="Entrada por surtimiento">Por surtimiento</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Proveedor</label>
+                                <input type="text" id="invProveedor" required placeholder="Distribuidora Óptica" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Folio Factura</label>
+                                <input type="text" id="invFolio" required placeholder="FAC-001" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs uppercase">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Fecha</label>
+                                <input type="date" id="invFecha" required class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Total Factura</label>
+                                <input type="text" id="lblImporteTotal" readonly class="w-full bg-betesda-yellow/20 border border-betesda-yellow rounded-lg p-1.5 text-xs font-mono font-extrabold text-right text-betesda-darkgreen" value="$0.00">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Subtotal</label>
+                                <input type="number" step="0.01" id="inputImporteSub" oninput="calcularTotalManual()" placeholder="0.00" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs font-mono font-bold text-right" value="0.00">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">IVA Total</label>
+                                <input type="number" step="0.01" id="inputImporteIva" oninput="calcularTotalManual()" placeholder="0.00" class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs font-mono font-bold text-right" value="0.00">
+                            </div>
+                            <div class="col-span-2 sm:col-span-4">
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-0.5">Observaciones</label>
+                                <input type="text" id="invComentarios" placeholder="Notas adicionales..." class="w-full bg-white border border-betesda-lightgreen rounded-lg p-1.5 text-xs">
+                            </div>
+                        </div>
+
+                        <!-- ARTÍCULOS RECIBIDOS RESTRUCTURADOS -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-extrabold text-betesda-green uppercase">Artículos de la Factura</h3>
+                            </div>
+                            <div class="overflow-x-auto border border-betesda-lightgreen rounded-xl max-h-[320px]">
+                                <table class="w-full text-left text-[11px] text-slate-700">
+                                    <thead class="bg-betesda-green/10 text-betesda-darkgreen font-bold sticky top-0 z-10">
+                                        <tr>
+                                            <th class="p-2 min-w-[180px]">BUSCAR / PRODUCTO</th>
+                                            <th class="p-2 w-28">LOTE</th>
+                                            <th class="p-2 text-center w-16">CANT</th>
+                                            <th class="p-2 text-right w-24">COSTO U.</th>
+                                            <th class="p-2 text-right w-24">P. VENTA</th>
+                                            <th class="p-2 text-center w-20">
+                                                <span>IVA %</span>
+                                                <input type="number" id="defaultIvaInput" value="16" step="0.1" oninput="updateDefaultIva(this.value)" class="w-10 text-center bg-white border border-betesda-green rounded p-0 text-[10px] font-bold text-betesda-darkgreen inline-block ml-1" title="IVA por defecto">
+                                            </th>
+                                            <th class="p-2 text-right w-24">SUBTOTAL</th>
+                                            <th class="p-2 text-right w-20">M. IVA</th>
+                                            <th class="p-2 text-right w-24">TOTAL</th>
+                                            <th class="p-2 text-center w-12">ACC</th>
+                                        </tr>
+                                    </thead>
+                                    <!-- FILA DE CAPTURA RÁPIDA -->
+                                    <tbody class="bg-amber-50/70 border-b-2 border-betesda-yellow">
+                                        <tr>
+                                            <td class="p-1.5 relative">
+                                                <input type="text" id="temp_search" oninput="filterTempProduct(this.value)" placeholder="Escribe para buscar..." class="bg-white border border-betesda-yellow rounded p-1 text-xs w-full font-semibold outline-none focus:ring-1 focus:ring-betesda-green">
+                                                <div id="temp_dropdown" class="absolute z-30 left-0 top-10 bg-white border border-betesda-lightgreen shadow-lg rounded-xl w-64 max-h-36 overflow-y-auto hidden"></div>
+                                            </td>
+                                            <td class="p-1.5"><input type="text" id="temp_lote" class="bg-white border rounded p-1 text-xs w-full uppercase" placeholder="LOTE"></td>
+                                            <td class="p-1.5 text-center"><input type="number" min="1" id="temp_cant" value="1" oninput="calcTempSubtotal()" class="bg-white border rounded p-1 text-xs w-14 text-center font-bold"></td>
+                                            <td class="p-1.5 text-right"><input type="number" step="0.01" id="temp_costo" value="0" oninput="calcTempSubtotal()" class="bg-white border rounded p-1 text-xs w-20 text-right font-mono"></td>
+                                            <td class="p-1.5 text-right"><input type="number" step="0.01" id="temp_precioVenta" value="0" oninput="calcTempSubtotal()" class="bg-white border rounded p-1 text-xs w-20 text-right font-mono"></td>
+                                            <td class="p-1.5 text-center"><input type="number" step="0.1" id="temp_iva" value="16" oninput="calcTempSubtotal()" class="bg-white border rounded p-1 text-xs w-12 text-center font-mono"></td>
+                                            <td id="temp_subtotal" class="p-1.5 text-right font-mono font-bold text-betesda-green">$0.00</td>
+                                            <td id="temp_monto_iva" class="p-1.5 text-right font-mono font-semibold text-amber-700">$0.00</td>
+                                            <td id="temp_total_fila" class="p-1.5 text-right font-mono font-extrabold text-betesda-darkgreen">$0.00</td>
+                                            <td class="p-1.5 text-center">
+                                                <button type="button" onclick="addTempToInvoice()" title="Agregar Partida" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold p-1.5 rounded-lg text-xs shadow flex items-center justify-center mx-auto">
+                                                    <i class="fa-solid fa-plus text-betesda-yellow"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <!-- LISTADO DE PARTIDAS GUARDADAS -->
+                                    <tbody id="invoiceItemsTableBody" class="divide-y divide-betesda-lightgreen/50"></tbody>
+                                    <!-- FOOTER CON TOTALES DE TABLA -->
+                                    <tfoot class="bg-betesda-softgreen/90 border-t-2 border-betesda-green font-bold text-betesda-darkgreen sticky bottom-0">
+                                        <tr>
+                                            <td colspan="2" class="p-2 text-right font-extrabold uppercase">Totales:</td>
+                                            <td id="foot_total_cant" class="p-2 text-center font-black font-mono text-xs">0</td>
+                                            <td class="p-2"></td>
+                                            <td id="foot_total_precio_venta" class="p-2 text-right font-extrabold font-mono text-xs text-blue-700">$0.00</td>
+                                            <td class="p-2"></td>
+                                            <td id="foot_total_subtotal" class="p-2 text-right font-black font-mono text-xs text-betesda-green">$0.00</td>
+                                            <td id="foot_total_iva" class="p-2 text-right font-extrabold font-mono text-xs text-amber-700">$0.00</td>
+                                            <td id="foot_total_general" class="p-2 text-right font-black font-mono text-xs text-betesda-darkgreen">$0.00</td>
+                                            <td class="p-2 text-center"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- RESUMEN VISUAL COMPACTO Y BOTÓN DE GUARDADO -->
+                        <div class="flex justify-between items-center pt-2 border-t border-betesda-lightgreen/60">
+                            <p class="text-xs font-bold text-betesda-green">
+                                Cant. Artículos: <span id="summary_total_articulos" class="font-extrabold text-betesda-darkgreen">0</span> 
+                                <span class="mx-1 text-slate-300">|</span> 
+                                Importe Total Capturado: <span id="summary_importe_total" class="font-extrabold text-betesda-darkgreen">$0.00</span>
+                            </p>
+                            <button type="submit" class="bg-betesda-green text-white font-bold py-2 px-5 rounded-xl text-xs shadow hover:bg-betesda-darkgreen transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-floppy-disk text-betesda-yellow"></i> Guardar Factura
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SECCIÓN DE HISTORIAL DE FACTURAS -->
+                <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 space-y-3">
+                    <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                        <h2 class="text-xs font-bold text-betesda-green">
+                            <i class="fa-solid fa-clock-rotate-left text-betesda-yellow mr-1.5"></i> Historial de Facturas
+                        </h2>
+                        <span id="invoiceCountBadge" class="bg-betesda-lightgreen text-betesda-darkgreen text-[10px] font-bold px-2.5 py-0.5 rounded-full">0 Facturas</span>
+                    </div>
+
+                    <div class="overflow-x-auto border border-betesda-lightgreen rounded-xl max-h-[220px]">
+                        <table class="w-full text-left text-xs text-slate-700">
+                            <thead class="bg-betesda-green/10 text-betesda-darkgreen font-bold sticky top-0">
+                                <tr>
+                                    <th class="p-2">FECHA</th>
+                                    <th class="p-2">FOLIO</th>
+                                    <th class="p-2">TIPO ENTRADA</th>
+                                    <th class="p-2">PROVEEDOR</th>
+                                    <th class="p-2 text-center">ARTÍCULOS</th>
+                                    <th class="p-2 text-right">TOTAL</th>
+                                    <th class="p-2 text-center">ACCIONES</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesHistoryTableBody" class="divide-y divide-betesda-lightgreen/50">
+                                <tr>
+                                    <td colspan="7" class="p-3 text-center text-slate-400">No hay facturas registradas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE ADVERTENCIA POR DISCREPANCIA EN TOTALES -->
+    <div id="mismatchWarningModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-amber-500 p-6 w-full max-w-lg space-y-4">
+            <div class="flex items-center gap-3 text-amber-600">
+                <div class="bg-amber-100 p-2.5 rounded-2xl">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold uppercase text-slate-800">Diferencia en Totales de Factura</h3>
+                    <p class="text-[11px] text-slate-500">Los montos del encabezado no coinciden con las partidas.</p>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs space-y-2 text-slate-700">
+                <p class="font-semibold text-amber-900">¿Deseas guardar los cambios a pesar de que no coinciden los registros?</p>
+                <div id="mismatchDetails" class="font-mono text-[11px] space-y-1 bg-white p-2 rounded-xl border border-amber-200"></div>
+            </div>
+
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-betesda-green uppercase">Observaciones / Motivo (Requerido)</label>
+                <textarea id="modalObsInput" rows="2" placeholder="Explica la discrepancia (Ej: Descuento comercial aplicado, etc.)..." class="w-full bg-slate-50 border-2 border-amber-300 rounded-xl p-2.5 text-xs outline-none focus:ring-2 focus:ring-amber-500"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="button" onclick="closeMismatchModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl">Cancelar</button>
+                <button type="button" onclick="confirmSaveWithMismatch()" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow">Guardar de todos modos</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA VISUALIZAR / IMPRIMIR FACTURA -->
+    <div id="viewInvoiceModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-2 border-betesda-green p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-5">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice text-betesda-green text-lg"></i>
+                    <h3 class="text-sm font-bold text-betesda-green uppercase">Detalle de Factura</h3>
+                </div>
+                <button onclick="closeInvoiceModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="printArea" class="space-y-3">
+                <div class="flex justify-between items-start border-b border-slate-200 pb-3">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-betesda-green">ÓPTICA BETESDA</h2>
+                        <p class="text-xs text-slate-500 font-medium">Comprobante de Entrada de Inventario</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="modalFolio" class="inline-block bg-betesda-yellow/30 text-betesda-darkgreen font-mono font-bold px-2.5 py-0.5 rounded-xl text-xs">FAC-000</span>
+                        <p id="modalFecha" class="text-xs text-slate-500 font-semibold mt-0.5">21/10/2026</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs bg-betesda-softgreen p-3 rounded-xl border border-betesda-lightgreen">
+                    <div><strong>Proveedor:</strong> <span id="modalProveedor" class="text-slate-700">--</span></div>
+                    <div><strong>Tipo de Entrada:</strong> <span id="modalTipo" class="text-slate-700">--</span></div>
+                    <div><strong>Subtotal Capturado:</strong> <span id="modalSubtotal" class="font-mono">--</span></div>
+                    <div><strong>IVA Capturado:</strong> <span id="modalIva" class="font-mono">--</span></div>
+                    <div class="col-span-2"><strong>Importe Total:</strong> <span id="modalTotal" class="font-mono font-extrabold text-betesda-darkgreen">--</span></div>
+                    <div class="col-span-2 bg-white p-2.5 rounded-lg border border-betesda-lightgreen">
+                        <strong class="text-betesda-green block mb-0.5">Observaciones:</strong> 
+                        <span id="modalComentarios" class="italic text-slate-700">--</span>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <h4 class="text-xs font-bold text-betesda-green uppercase">Productos Ingresados</h4>
+                    <table class="w-full text-xs text-left border border-slate-200 rounded-xl overflow-hidden">
+                        <thead class="bg-betesda-green text-white font-bold">
+                            <tr>
+                                <th class="p-2">Producto</th>
+                                <th class="p-2">Lote</th>
+                                <th class="p-2 text-center">Cant</th>
+                                <th class="p-2 text-right">Costo U.</th>
+                                <th class="p-2 text-right">P. Venta</th>
+                                <th class="p-2 text-right">Subtotal</th>
+                                <th class="p-2 text-right">IVA</th>
+                                <th class="p-2 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalItemsTableBody" class="divide-y divide-slate-200"></tbody>
+                        <tfoot class="bg-betesda-softgreen border-t-2 border-betesda-green font-bold text-betesda-darkgreen">
+                            <tr>
+                                <td colspan="2" class="p-2 text-right uppercase">Totales Factura:</td>
+                                <td id="modalFootCant" class="p-2 text-center font-black font-mono">0</td>
+                                <td class="p-2"></td>
+                                <td class="p-2"></td>
+                                <td id="modalFootSubtotal" class="p-2 text-right font-mono text-betesda-green">$0.00</td>
+                                <td id="modalFootIva" class="p-2 text-right font-mono text-amber-700">$0.00</td>
+                                <td id="modalFootTotal" class="p-2 text-right font-mono font-black text-betesda-darkgreen">$0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t border-betesda-lightgreen pt-3">
+                <button type="button" onclick="printInvoiceModal()" class="bg-betesda-green text-white font-bold text-xs px-3.5 py-2 rounded-xl flex items-center gap-1.5 hover:bg-betesda-darkgreen transition">
+                    <i class="fa-solid fa-print"></i> Imprimir Factura
+                </button>
+                <button type="button" onclick="closeInvoiceModal()" class="bg-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl hover:bg-slate-300">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usersDB = JSON.parse(localStorage.getItem('opti_betesda_users')) || [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador', modulos: ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'loggin.html'] }];
+        let currentUser = null;
+        let productHistory = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
+        let invoicesHistory = JSON.parse(localStorage.getItem('opti_betesda_invoices')) || [];
+        let existenciasDB = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || JSON.parse(localStorage.getItem('opti_betesda_inventario')) || [];
+        let invoiceItems = [];
+        let tempSelectedProd = null;
+        let sidebarTimer = null;
+
+        window.onload = function() {
+            checkSession();
+            const today = new Date().toISOString().split('T')[0];
+            const f = document.getElementById('invFecha');
+            if(f) f.value = today;
+            renderInvoiceItems();
+            renderInvoicesHistory();
+        };
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            const texts = sidebar.querySelectorAll('.sidebar-text');
+            texts.forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            const texts = sidebar.querySelectorAll('.sidebar-text');
+            texts.forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (currentUser.user !== 'Admin' && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+            } else {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { alert("Datos incorrectos"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function calcularTotalManual() {
+            const sub = parseFloat(document.getElementById('inputImporteSub').value) || 0;
+            const iva = parseFloat(document.getElementById('inputImporteIva').value) || 0;
+            const total = sub + iva;
+            document.getElementById('lblImporteTotal').value = `$${total.toFixed(2)}`;
+        }
+
+        function updateDefaultIva(val) {
+            document.getElementById('temp_iva').value = val || 0;
+            calcTempSubtotal();
+        }
+
+        function filterTempProduct(text) {
+            const dropdown = document.getElementById('temp_dropdown');
+            if(!text.trim()) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            const matches = productHistory.filter(p => 
+                p.marcaNombre.toLowerCase().includes(text.toLowerCase()) || 
+                p.modeloNombre.toLowerCase().includes(text.toLowerCase())
+            );
+
+            if(matches.length > 0) {
+                let html = '';
+                matches.forEach(m => {
+                    let tipoTag = 'Armazón';
+                    if(m.tipo === '2') tipoTag = 'Accesorio';
+                    if(m.tipo === '3') tipoTag = `Lente C. (${m.tipoLente || 'Blandos'})`;
+
+                    html += `<div onclick="selectTempProduct('${m.id}')" class="p-2 hover:bg-betesda-lightgreen cursor-pointer text-xs font-semibold border-b border-slate-100">${m.marcaNombre} - ${m.modeloNombre} <span class="text-[10px] text-betesda-green font-bold">(${tipoTag})</span></div>`;
+                });
+                dropdown.innerHTML = html;
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.innerHTML = `<div class="p-2 text-xs text-slate-400">Sin coincidencias</div>`;
+                dropdown.classList.remove('hidden');
+            }
+        }
+
+        // AUTOCOMPLETADO DE PRECIO VENTA DESDE EL REGISTRO DE PRODUCTO
+        function selectTempProduct(prodId) {
+            const found = productHistory.find(p => p.id === prodId);
+            if(found) {
+                tempSelectedProd = found;
+                document.getElementById('temp_search').value = `${found.marcaNombre} - ${found.modeloNombre}`;
+                
+                // Jala automáticamente el precio de venta registrado en index.html
+                document.getElementById('temp_precioVenta').value = found.precioVenta || 0;
+
+                document.getElementById('temp_dropdown').classList.add('hidden');
+                calcTempSubtotal();
+            }
+        }
+
+        function calcTempSubtotal() {
+            const cant = parseFloat(document.getElementById('temp_cant').value) || 0;
+            const costo = parseFloat(document.getElementById('temp_costo').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('temp_iva').value) || 0;
+
+            const subtotalBase = cant * costo;
+            const montoIva = subtotalBase * (ivaPct / 100);
+            const totalFila = subtotalBase + montoIva;
+
+            document.getElementById('temp_subtotal').textContent = `$${subtotalBase.toFixed(2)}`;
+            document.getElementById('temp_monto_iva').textContent = `$${montoIva.toFixed(2)}`;
+            document.getElementById('temp_total_fila').textContent = `$${totalFila.toFixed(2)}`;
+        }
+
+        function addTempToInvoice() {
+            if(!tempSelectedProd) {
+                alert("Por favor selecciona un producto válido escribiendo en el campo de búsqueda.");
+                return;
+            }
+            const lote = document.getElementById('temp_lote').value.trim().toUpperCase();
+            if(!lote) {
+                alert("Por favor ingresa un Lote para el artículo.");
+                return;
+            }
+
+            const cant = parseFloat(document.getElementById('temp_cant').value) || 1;
+            const costo = parseFloat(document.getElementById('temp_costo').value) || 0;
+            const ivaPct = parseFloat(document.getElementById('temp_iva').value) || 0;
+            const precioVenta = parseFloat(document.getElementById('temp_precioVenta').value) || 0;
+
+            invoiceItems.unshift({
+                tipo: tempSelectedProd.tipo,
+                marca: tempSelectedProd.marcaNombre,
+                modelo: tempSelectedProd.modeloNombre,
+                lote,
+                cant,
+                costo,
+                iva: ivaPct,
+                precioVenta
+            });
+
+            // Limpiar fila temporal
+            tempSelectedProd = null;
+            document.getElementById('temp_search').value = '';
+            document.getElementById('temp_lote').value = '';
+            document.getElementById('temp_cant').value = 1;
+            document.getElementById('temp_costo').value = 0;
+            document.getElementById('temp_iva').value = document.getElementById('defaultIvaInput').value || 16;
+            document.getElementById('temp_precioVenta').value = 0;
+            calcTempSubtotal();
+
+            renderInvoiceItems();
+        }
+
+        function removeInvoiceItemRow(index) {
+            invoiceItems.splice(index, 1);
+            renderInvoiceItems();
+        }
+
+        function updateItemRowData(index, field, value) {
+            if(field === 'cant' || field === 'costo' || field === 'iva' || field === 'precioVenta') {
+                invoiceItems[index][field] = value === '' ? 0 : parseFloat(value);
+            } else {
+                invoiceItems[index][field] = value;
+            }
+
+            const cant = parseFloat(invoiceItems[index].cant) || 0;
+            const costo = parseFloat(invoiceItems[index].costo) || 0;
+            const ivaPct = parseFloat(invoiceItems[index].iva) || 0;
+
+            const subtotalBase = cant * costo;
+            const montoIva = subtotalBase * (ivaPct / 100);
+            const totalFila = subtotalBase + montoIva;
+
+            const rowSubElement = document.getElementById(`subtotal_row_${index}`);
+            if(rowSubElement) rowSubElement.textContent = `$${subtotalBase.toFixed(2)}`;
+
+            const rowIvaElement = document.getElementById(`monto_iva_row_${index}`);
+            if(rowIvaElement) rowIvaElement.textContent = `$${montoIva.toFixed(2)}`;
+
+            const rowTotalElement = document.getElementById(`total_row_${index}`);
+            if(rowTotalElement) rowTotalElement.textContent = `$${totalFila.toFixed(2)}`;
+
+            calculateTableFooterTotals();
+        }
+
+        function getCalculatedTotals() {
+            let sumCant = 0;
+            let sumSubtotal = 0;
+            let sumIva = 0;
+            let sumTotalGeneral = 0;
+
+            invoiceItems.forEach(item => {
+                const cant = parseFloat(item.cant) || 0;
+                const costo = parseFloat(item.costo) || 0;
+                const ivaPct = parseFloat(item.iva) || 0;
+
+                const subtotalBase = cant * costo;
+                const montoIva = subtotalBase * (ivaPct / 100);
+                const totalFila = subtotalBase + montoIva;
+
+                sumCant += cant;
+                sumSubtotal += subtotalBase;
+                sumIva += montoIva;
+                sumTotalGeneral += totalFila;
+            });
+
+            return { sumCant, sumSubtotal, sumIva, sumTotalGeneral };
+        }
+
+        function calculateTableFooterTotals() {
+            let sumPrecioVenta = 0;
+            const totals = getCalculatedTotals();
+
+            invoiceItems.forEach(item => {
+                const cant = parseFloat(item.cant) || 0;
+                const precioVenta = parseFloat(item.precioVenta) || 0;
+                sumPrecioVenta += (cant * precioVenta);
+            });
+
+            document.getElementById('foot_total_cant').textContent = totals.sumCant;
+            document.getElementById('foot_total_precio_venta').textContent = `$${sumPrecioVenta.toFixed(2)}`;
+            document.getElementById('foot_total_subtotal').textContent = `$${totals.sumSubtotal.toFixed(2)}`;
+            document.getElementById('foot_total_iva').textContent = `$${totals.sumIva.toFixed(2)}`;
+            document.getElementById('foot_total_general').textContent = `$${totals.sumTotalGeneral.toFixed(2)}`;
+
+            const sumArticulosEl = document.getElementById('summary_total_articulos');
+            const sumImporteEl = document.getElementById('summary_importe_total');
+            if(sumArticulosEl) sumArticulosEl.textContent = totals.sumCant;
+            if(sumImporteEl) sumImporteEl.textContent = `$${totals.sumTotalGeneral.toFixed(2)}`;
+        }
+
+        function renderInvoiceItems() {
+            const tbody = document.getElementById('invoiceItemsTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            invoiceItems.forEach((item, index) => {
+                const cant = parseFloat(item.cant) || 0;
+                const costo = parseFloat(item.costo) || 0;
+                const ivaPct = parseFloat(item.iva) || 0;
+                
+                const subtotalBase = cant * costo;
+                const montoIva = subtotalBase * (ivaPct / 100);
+                const totalFila = subtotalBase + montoIva;
+
+                let tipoTexto = 'Armazón';
+                if(item.tipo === '2') tipoTexto = 'Accesorio';
+                if(item.tipo === '3') tipoTexto = 'Lente C.';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen/50">
+                        <td class="p-1.5 font-semibold">
+                            <div>${item.marca} - ${item.modelo}</div>
+                            <span class="text-[9px] text-betesda-green font-bold">(${tipoTexto})</span>
+                        </td>
+                        <td class="p-1.5"><input type="text" value="${item.lote || ''}" oninput="updateItemRowData(${index}, 'lote', this.value)" class="bg-white border rounded p-1 text-xs w-full uppercase font-medium" placeholder="Lote"></td>
+                        <td class="p-1.5 text-center"><input type="number" min="1" value="${item.cant}" oninput="updateItemRowData(${index}, 'cant', this.value)" class="bg-white border rounded p-1 text-xs w-14 text-center font-bold"></td>
+                        <td class="p-1.5 text-right"><input type="number" step="0.01" value="${item.costo}" oninput="updateItemRowData(${index}, 'costo', this.value)" class="bg-white border rounded p-1 text-xs w-20 text-right font-mono"></td>
+                        <td class="p-1.5 text-right"><input type="number" step="0.01" value="${item.precioVenta}" oninput="updateItemRowData(${index}, 'precioVenta', this.value)" class="bg-white border rounded p-1 text-xs w-20 text-right font-mono"></td>
+                        <td class="p-1.5 text-center"><input type="number" step="0.1" value="${item.iva}" oninput="updateItemRowData(${index}, 'iva', this.value)" class="bg-white border rounded p-1 text-xs w-12 text-center font-mono"></td>
+                        <td id="subtotal_row_${index}" class="p-1.5 text-right font-mono font-bold text-betesda-green">$${subtotalBase.toFixed(2)}</td>
+                        <td id="monto_iva_row_${index}" class="p-1.5 text-right font-mono font-semibold text-amber-700">$${montoIva.toFixed(2)}</td>
+                        <td id="total_row_${index}" class="p-1.5 text-right font-mono font-extrabold text-betesda-darkgreen">$${totalFila.toFixed(2)}</td>
+                        <td class="p-1.5 text-center"><button type="button" onclick="removeInvoiceItemRow(${index})" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+
+            calculateTableFooterTotals();
+        }
+
+        function validateAndSaveInvoice() {
+            const proveedor = document.getElementById('invProveedor').value.trim();
+            const folio = document.getElementById('invFolio').value.trim().toUpperCase();
+            const fecha = document.getElementById('invFecha').value;
+
+            if(!proveedor || !folio || !fecha) { alert("Completa los datos obligatorios de la factura"); return; }
+            if(invoiceItems.length === 0) { alert("Agrega al menos un artículo a la lista de artículos recibidos."); return; }
+
+            const headerSub = parseFloat(document.getElementById('inputImporteSub').value) || 0;
+            const headerIva = parseFloat(document.getElementById('inputImporteIva').value) || 0;
+            const headerTotal = headerSub + headerIva;
+
+            const calc = getCalculatedTotals();
+
+            const diffSub = Math.abs(headerSub - calc.sumSubtotal) > 0.01;
+            const diffIva = Math.abs(headerIva - calc.sumIva) > 0.01;
+            const diffTotal = Math.abs(headerTotal - calc.sumTotalGeneral) > 0.01;
+
+            if (diffSub || diffIva || diffTotal) {
+                const detailsDiv = document.getElementById('mismatchDetails');
+                detailsDiv.innerHTML = `
+                    <div class="flex justify-between"><span>Encabezado Subtotal: <strong>$${headerSub.toFixed(2)}</strong></span> <span>Registros Subtotal: <strong>$${calc.sumSubtotal.toFixed(2)}</strong></span></div>
+                    <div class="flex justify-between"><span>Encabezado IVA: <strong>$${headerIva.toFixed(2)}</strong></span> <span>Registros IVA: <strong>$${calc.sumIva.toFixed(2)}</strong></span></div>
+                    <div class="flex justify-between border-t pt-1 font-bold"><span>Encabezado Total: <strong>$${headerTotal.toFixed(2)}</strong></span> <span>Registros Total: <strong>$${calc.sumTotalGeneral.toFixed(2)}</strong></span></div>
+                `;
+                document.getElementById('modalObsInput').value = document.getElementById('invComentarios').value.trim();
+                document.getElementById('mismatchWarningModal').classList.remove('hidden');
+                return;
+            }
+
+            executeSaveInvoice();
+        }
+
+        function confirmSaveWithMismatch() {
+            const obs = document.getElementById('modalObsInput').value.trim();
+            if(!obs) {
+                alert("Por favor escribe la observación o motivo de la diferencia de totales para continuar.");
+                return;
+            }
+            document.getElementById('invComentarios').value = obs;
+            closeMismatchModal();
+            executeSaveInvoice();
+        }
+
+        function closeMismatchModal() {
+            document.getElementById('mismatchWarningModal').classList.add('hidden');
+        }
+
+        function executeSaveInvoice() {
+            const tipoEntrada = document.getElementById('invTipoEntrada').value;
+            const proveedor = document.getElementById('invProveedor').value.trim();
+            const folio = document.getElementById('invFolio').value.trim().toUpperCase();
+            const fecha = document.getElementById('invFecha').value;
+            const importeSub = document.getElementById('inputImporteSub').value;
+            const importeIva = document.getElementById('inputImporteIva').value;
+            const importeTotal = document.getElementById('lblImporteTotal').value;
+            const comentarios = document.getElementById('invComentarios').value.trim();
+
+            invoiceItems.forEach(item => {
+                let tipoTexto = 'Armazón';
+                if(item.tipo === '2') tipoTexto = 'Accesorio';
+                if(item.tipo === '3') tipoTexto = 'Lente de Contacto';
+
+                existenciasDB.unshift({
+                    tipo: tipoTexto,
+                    marca: item.marca,
+                    modelo: item.modelo,
+                    lote: item.lote,
+                    folio: folio,
+                    tipoEntrada: tipoEntrada,
+                    fecha: fecha,
+                    costo: item.costo,
+                    cantidad: item.cant
+                });
+            });
+
+            invoicesHistory.unshift({ 
+                id: Date.now().toString(), 
+                tipoEntrada, 
+                proveedor, 
+                folio, 
+                fecha, 
+                importeSub,
+                importeIva,
+                importeTotal,
+                comentarios, 
+                items: [...invoiceItems], 
+                timestamp: new Date().toLocaleString() 
+            });
+
+            localStorage.setItem('opti_betesda_invoices', JSON.stringify(invoicesHistory));
+            localStorage.setItem('opti_betesda_existencias', JSON.stringify(existenciasDB));
+            
+            alert("Factura e inventario guardados correctamente.");
+            
+            invoiceItems = [];
+            document.getElementById('invProveedor').value = '';
+            document.getElementById('invFolio').value = '';
+            document.getElementById('invComentarios').value = '';
+            document.getElementById('inputImporteSub').value = '0.00';
+            document.getElementById('inputImporteIva').value = '0.00';
+            document.getElementById('lblImporteTotal').value = '$0.00';
+            renderInvoiceItems();
+            renderInvoicesHistory();
+        }
+
+        function renderInvoicesHistory() {
+            const tbody = document.getElementById('invoicesHistoryTableBody');
+            const badge = document.getElementById('invoiceCountBadge');
+            if(!tbody) return;
+
+            badge.textContent = `${invoicesHistory.length} Facturas`;
+
+            if(invoicesHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-400">No hay facturas registradas.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            invoicesHistory.forEach(inv => {
+                const cantArticulos = inv.items.reduce((acc, curr) => acc + (parseFloat(curr.cant) || 0), 0);
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-2 font-semibold">${inv.fecha}</td>
+                        <td class="p-2 font-mono font-bold text-betesda-green">${inv.folio}</td>
+                        <td class="p-2 font-medium">${inv.tipoEntrada}</td>
+                        <td class="p-2 font-bold">${inv.proveedor}</td>
+                        <td class="p-2 text-center"><span class="bg-betesda-lightgreen px-2 py-0.5 rounded-full font-mono font-bold">${cantArticulos}</span></td>
+                        <td class="p-2 text-right font-mono font-bold text-betesda-darkgreen">${inv.importeTotal || '$0.00'}</td>
+                        <td class="p-2 text-center space-x-1.5">
+                            <button onclick="openInvoiceModal('${inv.id}')" class="bg-sky-100 text-sky-700 hover:bg-sky-200 p-1.5 rounded-lg transition" title="Visualizar Factura"><i class="fa-solid fa-eye"></i></button>
+                            <button onclick="printDirectInvoice('${inv.id}')" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 p-1.5 rounded-lg transition" title="Imprimir Factura"><i class="fa-solid fa-print"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openInvoiceModal(invId) {
+            const inv = invoicesHistory.find(i => i.id === invId);
+            if(!inv) return;
+
+            document.getElementById('modalFolio').textContent = inv.folio;
+            document.getElementById('modalFecha').textContent = inv.fecha;
+            document.getElementById('modalProveedor').textContent = inv.proveedor;
+            document.getElementById('modalTipo').textContent = inv.tipoEntrada;
+            document.getElementById('modalSubtotal').textContent = `$${parseFloat(inv.importeSub || 0).toFixed(2)}`;
+            document.getElementById('modalIva').textContent = `$${parseFloat(inv.importeIva || 0).toFixed(2)}`;
+            document.getElementById('modalTotal').textContent = inv.importeTotal || '$0.00';
+            document.getElementById('modalComentarios').textContent = inv.comentarios || 'Sin observaciones.';
+
+            const tbody = document.getElementById('modalItemsTableBody');
+            tbody.innerHTML = '';
+
+            let sumModalCant = 0;
+            let sumModalSub = 0;
+            let sumModalIva = 0;
+            let sumModalTotal = 0;
+
+            inv.items.forEach(item => {
+                const cant = parseFloat(item.cant) || 0;
+                const costo = parseFloat(item.costo) || 0;
+                const sub = cant * costo;
+                const iva = sub * ((parseFloat(item.iva) || 0) / 100);
+                const tot = sub + iva;
+
+                sumModalCant += cant;
+                sumModalSub += sub;
+                sumModalIva += iva;
+                sumModalTotal += tot;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2 font-semibold">${item.marca} ${item.modelo}</td>
+                        <td class="p-2 font-mono">${item.lote}</td>
+                        <td class="p-2 text-center font-bold">${cant}</td>
+                        <td class="p-2 text-right font-mono">$${costo.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono">$${parseFloat(item.precioVenta || 0).toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono">$${sub.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono">$${iva.toFixed(2)}</td>
+                        <td class="p-2 text-right font-mono font-bold">$${tot.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            // Llenado de totales acumulados en la fila de pie de tabla (tfoot)
+            document.getElementById('modalFootCant').textContent = sumModalCant;
+            document.getElementById('modalFootSubtotal').textContent = `$${sumModalSub.toFixed(2)}`;
+            document.getElementById('modalFootIva').textContent = `$${sumModalIva.toFixed(2)}`;
+            document.getElementById('modalFootTotal').textContent = `$${sumModalTotal.toFixed(2)}`;
+
+            document.getElementById('viewInvoiceModal').classList.remove('hidden');
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('viewInvoiceModal').classList.add('hidden');
+        }
+
+        function printInvoiceModal() {
+            window.print();
+        }
+
+        function printDirectInvoice(invId) {
+            openInvoiceModal(invId);
+            setTimeout(() => { window.print(); }, 300);
+        }
+    </script>
+</body>
+</html>

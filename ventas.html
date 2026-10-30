@@ -1,0 +1,2552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto de Venta - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            @page {
+                size: 80mm 200mm;
+                margin: 0mm;
+            }
+            body, html {
+                width: 80mm;
+                height: 200mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+            body * { visibility: hidden; }
+            #printArea, #printArea * { visibility: visible; }
+            #printArea { 
+                display: block !important; 
+                position: absolute !important; 
+                left: 0 !important; 
+                top: 0 !important; 
+                width: 76mm !important; 
+                max-width: 76mm !important;
+                height: 196mm !important;
+                max-height: 196mm !important;
+                margin: 0 auto !important;
+                padding: 2mm !important; 
+                background: white !important; 
+                overflow: hidden !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Módulo</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col h-screen overflow-hidden hidden">
+        <header class="bg-betesda-green text-white shadow-md no-print border-b-4 border-betesda-yellow shrink-0 z-40">
+            <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[10px] text-betesda-lightgreen font-medium">Punto de Venta</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1600px] w-full mx-auto overflow-hidden">
+            <!-- BARRA LATERAL -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto no-print z-30">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="flex-grow p-4 overflow-y-auto grid grid-cols-1 lg:grid-cols-[55%_45%] gap-4">
+                
+                <!-- COLUMNA IZQUIERDA (55%): PUNTO DE VENTA -->
+                <div class="flex flex-col space-y-4 overflow-y-auto">
+                    
+                    <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-3.5 flex justify-between items-center">
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <button onclick="iniciarNuevaVenta()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-circle-plus text-betesda-yellow"></i> Nueva Venta
+                            </button>
+                            <div class="flex items-center gap-2 bg-betesda-softgreen px-3.5 py-1.5 rounded-xl border border-betesda-lightgreen text-xs">
+                                <span class="font-bold text-betesda-green uppercase">Nota:</span>
+                                <span id="lblNotaNumero" class="font-mono font-extrabold text-betesda-darkgreen">NOTA-001</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DATOS DEL PACIENTE -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4">
+                        <h3 class="text-xs font-bold text-betesda-green uppercase mb-2.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-injured text-betesda-yellow"></i> Datos del Paciente (Opcional)
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Nombre Completo</label>
+                                <input type="text" id="pacienteNombre" placeholder="Nombre completo" disabled class="bg-slate-100 border border-betesda-lightgreen rounded-xl p-2 w-full font-medium disabled:opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Edad</label>
+                                <input type="number" id="pacienteEdad" placeholder="Edad" disabled class="bg-slate-100 border border-betesda-lightgreen rounded-xl p-2 w-full font-medium disabled:opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Teléfono</label>
+                                <input type="text" id="pacienteTelefono" placeholder="Teléfono" disabled class="bg-slate-100 border border-betesda-lightgreen rounded-xl p-2 w-full font-medium disabled:opacity-60">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Dirección</label>
+                                <input type="text" id="pacienteDireccion" placeholder="Dirección" disabled class="bg-slate-100 border border-betesda-lightgreen rounded-xl p-2 w-full font-medium disabled:opacity-60">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BUSCADOR DE PRODUCTOS Y SERVICIOS -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 space-y-3">
+                        <div class="flex flex-col sm:flex-row gap-2 items-center">
+                            <div class="relative flex-grow w-full">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                </span>
+                                <input type="text" id="busquedaInput" disabled oninput="buscarProductos(this.value)" placeholder="Escanee o escriba SKU, código de etiqueta, marca, modelo, mica o servicio..." class="w-full bg-slate-100 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-2 text-xs font-medium outline-none focus:border-betesda-green disabled:opacity-60">
+                                <div id="resultadosDropdown" class="absolute z-20 left-0 right-0 top-11 bg-white border border-betesda-lightgreen rounded-2xl shadow-xl max-h-60 overflow-y-auto hidden"></div>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <input type="number" id="cantidadItem" value="1" min="1" disabled class="w-16 bg-slate-100 border-2 border-betesda-lightgreen rounded-xl p-2 text-xs font-bold text-center disabled:opacity-60">
+                                <button id="btnAgregar" disabled onclick="agregarSeleccionadoManual()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-plus text-betesda-yellow"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE CARRITO -->
+                        <div class="overflow-x-auto border border-betesda-lightgreen rounded-xl max-h-[300px]">
+                            <table class="w-full text-left text-xs text-slate-700">
+                                <thead class="bg-betesda-green text-white font-bold sticky top-0">
+                                    <tr>
+                                        <th class="p-2.5">Producto / Servicio / RX</th>
+                                        <th class="p-2.5 text-center w-14">Cant</th>
+                                        <th class="p-2.5 text-right w-20">Precio U.</th>
+                                        <th class="p-2.5 text-center w-20">Descto %</th>
+                                        <th class="p-2.5 text-right w-24">Subtotal</th>
+                                        <th class="p-2.5 text-center w-12">Acc</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="carritoTableBody" class="divide-y divide-betesda-lightgreen/50">
+                                    <tr><td colspan="6" class="p-4 text-center text-slate-400">Presiona "Nueva Venta" para habilitar el módulo.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TOTALES Y BOTONES -->
+                        <div class="bg-betesda-softgreen p-4 rounded-2xl border border-betesda-lightgreen flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div class="flex flex-wrap gap-4 text-xs font-bold text-betesda-darkgreen">
+                                <div>Subtotal: <span id="lblSubtotal" class="font-mono text-sm">$0.00</span></div>
+                                <div>IVA (16%): <span id="lblIva" class="font-mono text-sm">$0.00</span></div>
+                                <div class="text-sm">Total: <span id="lblTotal" class="font-mono text-lg text-betesda-green">$0.00</span></div>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button id="btnCancelar" disabled onclick="cancelarVenta()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-ban"></i> Cancelar
+                                </button>
+                                <button id="btnCobrar" disabled onclick="prepararCobroVenta()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <i class="fa-solid fa-cash-register text-betesda-yellow"></i> Cobrar / Vender
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- COLUMNA DERECHA (45%): REGISTRO DE VENTA DIARIA -->
+                <div class="bg-white rounded-2xl shadow-sm border border-betesda-lightgreen/80 p-4 flex flex-col space-y-3 h-[calc(100vh-100px)] overflow-hidden">
+                    <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                        <h3 class="text-xs font-bold text-betesda-green uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-day text-betesda-yellow"></i> Registro de Venta Diaria
+                        </h3>
+                        <span id="lblFechaHoy" class="text-[10px] bg-betesda-softgreen text-betesda-darkgreen font-bold px-2.5 py-1 rounded-full border border-betesda-lightgreen">--/--/----</span>
+                    </div>
+
+                    <!-- BUSCADOR DIARIO Y BOTONES DE ACCIÓN DE CAJA -->
+                    <div class="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                        <div class="relative flex-grow min-w-[150px]">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                            </span>
+                            <input type="text" id="busquedaVentasInput" oninput="renderVentasDiarias()" placeholder="Buscar paciente o nota (ej. NOTA-001)..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-2 text-xs font-medium outline-none focus:border-betesda-green">
+                        </div>
+                        <button onclick="abrirModalCierreCaja()" class="bg-betesda-darkgreen hover:bg-betesda-green text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5 whitespace-nowrap shrink-0 border border-betesda-yellow/50">
+                            <i class="fa-solid fa-vault text-betesda-yellow"></i> Cierre de Caja
+                        </button>
+                        <button onclick="abrirModalCancelarNota()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                            <i class="fa-solid fa-ban"></i> Cancelar Nota
+                        </button>
+                    </div>
+
+                    <div class="bg-betesda-softgreen p-3 rounded-xl border border-betesda-lightgreen flex justify-between items-center text-xs">
+                        <div>
+                            <span class="block text-slate-500 font-semibold text-[10px]">Total Vendido Hoy:</span>
+                            <span id="lblTotalVentasDia" class="font-mono font-extrabold text-betesda-green text-sm">$0.00</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-slate-500 font-semibold text-[10px]">Tickets Emitidos:</span>
+                            <span id="lblCountVentasDia" class="font-mono font-extrabold text-betesda-darkgreen text-sm">0</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-grow overflow-y-auto border border-betesda-lightgreen rounded-xl">
+                        <table class="w-full text-left text-xs text-slate-700">
+                            <thead class="bg-betesda-green text-white font-bold sticky top-0">
+                                <tr>
+                                    <th class="p-2">Nota / Hora</th>
+                                    <th class="p-2">Paciente</th>
+                                    <th class="p-2 text-center">Pago</th>
+                                    <th class="p-2 text-right">Cobrado</th>
+                                    <th class="p-2 text-center w-40">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaVentasDiariasBody" class="divide-y divide-betesda-lightgreen/50">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400">No hay ventas registradas hoy.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL CIERRE DE CAJA -->
+    <div id="modalCierreCaja" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-vault text-betesda-yellow"></i> Cierre de Caja del Día
+                </h3>
+                <button onclick="cerrarModalCierreCaja()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="bg-betesda-softgreen p-3.5 rounded-2xl border border-betesda-lightgreen text-xs flex justify-between items-center">
+                <div>
+                    <span class="block text-slate-500 font-semibold text-[10px]">Fecha del Corte:</span>
+                    <span id="cierreFechaHoy" class="font-bold text-betesda-darkgreen">--/--/----</span>
+                </div>
+                <div class="text-right">
+                    <span class="block text-slate-500 font-semibold text-[10px]">Responsable:</span>
+                    <span id="cierreUsuario" class="font-bold text-betesda-green">Admin</span>
+                </div>
+            </div>
+
+            <!-- DESGLOSE DE PAGOS -->
+            <div class="space-y-2 text-xs font-mono">
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 flex justify-between items-center">
+                    <span class="font-bold text-emerald-900 uppercase"><i class="fa-solid fa-money-bill-wave text-emerald-600"></i> Efectivo:</span>
+                    <span id="cierreMontoEfectivo" class="font-extrabold text-sm text-emerald-700">$0.00</span>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 flex justify-between items-center">
+                    <span class="font-bold text-blue-900 uppercase"><i class="fa-solid fa-credit-card text-blue-600"></i> Tarjeta (Débito/Crédito):</span>
+                    <span id="cierreMontoTarjeta" class="font-extrabold text-sm text-blue-700">$0.00</span>
+                </div>
+                <div class="bg-purple-50 p-3 rounded-xl border border-purple-200 flex justify-between items-center">
+                    <span class="font-bold text-purple-900 uppercase"><i class="fa-solid fa-building-columns text-purple-600"></i> Transferencia Bancaria:</span>
+                    <span id="cierreMontoTransferencia" class="font-extrabold text-sm text-purple-700">$0.00</span>
+                </div>
+                
+                <div class="bg-slate-100 p-3 rounded-xl border border-slate-300 flex justify-between items-center font-extrabold text-sm text-betesda-darkgreen pt-3 border-t-2">
+                    <span class="uppercase">TOTAL NETO INGRESADO:</span>
+                    <span id="cierreMontoTotalNeto" class="text-lg text-betesda-green">$0.00</span>
+                </div>
+            </div>
+
+            <!-- RESUMEN DE MOVIMIENTOS -->
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs space-y-1">
+                <div class="flex justify-between"><span>Ventas Emitidas Vigentes:</span> <strong id="cierreCountVentas" class="text-betesda-darkgreen">0</strong></div>
+                <div class="flex justify-between text-rose-600 font-semibold"><span>Notas Canceladas Hoy:</span> <strong id="cierreCountCanceladas">0</strong></div>
+                <div class="flex justify-between text-rose-600 font-semibold"><span>Monto Total Cancelado:</span> <strong id="cierreMontoCancelado">$0.00</strong></div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="cerrarModalCierreCaja()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cerrar</button>
+                <button type="button" onclick="ejecutarImpresionCierreCaja()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-print text-betesda-yellow"></i> Imprimir y Registrar Cierre
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DIOPTRIAS -->
+    <div id="modalDioptrias" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-2xl space-y-4">
+            <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                <i class="fa-solid fa-glasses text-betesda-yellow"></i> Graduación (RX) y Cotejo Automático - Micas
+            </h3>
+            <p id="modalMicaNombre" class="text-xs text-slate-600 font-semibold"></p>
+            
+            <div class="bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen flex items-center justify-between">
+                <label class="text-xs font-bold text-betesda-green uppercase"><i class="fa-solid fa-tag"></i> Tipo de Armazón:</label>
+                <select id="tipoArmazonMica" class="bg-white border-2 border-betesda-lightgreen rounded-xl p-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                    <option value="linea">Armazón de Línea</option>
+                    <option value="paciente">Armazón Paciente</option>
+                    <option value="regalo">Armazón de Regalo</option>
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-center border-collapse">
+                    <thead>
+                        <tr class="bg-betesda-green text-white font-bold">
+                            <th class="p-2 border border-emerald-800">Ojo</th>
+                            <th class="p-2 border border-emerald-800">ESF</th>
+                            <th class="p-2 border border-emerald-800">CIL</th>
+                            <th class="p-2 border border-emerald-800">EJE</th>
+                            <th class="p-2 border border-emerald-800">A.D.D</th>
+                            <th class="p-2 border border-emerald-800">A.O</th>
+                            <th class="p-2 border border-emerald-800">D.I</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="p-2 border font-bold bg-slate-100">OD</td>
+                            <td class="p-2 border"><input type="text" id="od_esf" placeholder="0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="od_cil" placeholder="0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="od_eje" placeholder="0°" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="od_add" placeholder="+0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="od_ao" placeholder="mm" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="od_di" placeholder="mm" class="w-full bg-slate-50 border rounded p-1 text-center text-xs font-bold"></td>
+                        </tr>
+                        <tr>
+                            <td class="p-2 border font-bold bg-slate-100">OI</td>
+                            <td class="p-2 border"><input type="text" id="oi_esf" placeholder="0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="oi_cil" placeholder="0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="oi_eje" placeholder="0°" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="oi_add" placeholder="+0.00" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="oi_ao" placeholder="mm" class="w-full bg-slate-50 border rounded p-1 text-center text-xs"></td>
+                            <td class="p-2 border"><input type="text" id="oi_di" placeholder="mm" class="w-full bg-slate-50 border rounded p-1 text-center text-xs font-bold"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalDioptrias()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">Omitir Graduación</button>
+                <button type="button" onclick="guardarMicaConCotejoAutomatico()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2 rounded-xl text-xs shadow">Cotejar y Aplicar Costo Automático</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PAGO -->
+    <div id="modalPago" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-3xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2 border-b border-betesda-lightgreen pb-2">
+                <i class="fa-solid fa-cash-register text-betesda-yellow"></i> Finalizar Venta y Entrega
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <div class="bg-betesda-softgreen p-3.5 rounded-2xl border border-betesda-lightgreen flex justify-between items-center">
+                        <span class="text-xs font-bold text-betesda-darkgreen uppercase">Total Final a Pagar:</span>
+                        <span id="lblModalTotalPagar" class="font-mono font-extrabold text-betesda-green text-xl">$0.00</span>
+                    </div>
+
+                    <div id="contenedorFechaEntrega" class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2 hidden">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold text-betesda-green uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-truck-ramp-box text-betesda-gold"></i> Fecha Promesa de Entrega:
+                            </label>
+                            <span class="text-[10px] text-slate-500">(3 a 5 días)</span>
+                        </div>
+                        <input type="date" id="inputFechaEntrega" class="w-full bg-white border-2 border-betesda-lightgreen rounded-xl p-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-betesda-green uppercase mb-1.5"><i class="fa-solid fa-hand-holding-dollar"></i> Modalidad de Cobro:</label>
+                        <select id="selectTipoCobro" onchange="cambiarTipoCobro()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="Total">Pago Completo (100%)</option>
+                            <option value="Anticipo">Anticipo / Abono Parcial</option>
+                        </select>
+                    </div>
+
+                    <div id="seccionAnticipo" class="space-y-2 bg-amber-50 p-3 rounded-2xl border border-amber-200 hidden">
+                        <div class="flex justify-between items-center text-xs">
+                            <label class="font-bold text-amber-900 uppercase">Monto de Anticipo ($):</label>
+                            <button type="button" onclick="aplicar50PorCientoSugerido()" class="text-[10px] bg-amber-200 hover:bg-amber-300 text-amber-900 font-extrabold px-2 py-0.5 rounded-full border border-amber-300 transition">
+                                Sugerir 50%
+                            </button>
+                        </div>
+                        <input type="number" step="0.01" id="inputMontoAnticipo" oninput="calcularSaldoPendiente()" placeholder="0.00" class="w-full bg-white border-2 border-amber-300 rounded-xl p-2 text-xs font-mono font-bold outline-none focus:border-betesda-green">
+                        
+                        <div class="flex justify-between items-center pt-1 border-t border-amber-200/80 text-xs font-bold">
+                            <span class="text-amber-900 uppercase">Saldo Pendiente:</span>
+                            <span id="lblSaldoPendiente" class="font-mono text-sm text-rose-600">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-betesda-green uppercase mb-1.5"><i class="fa-solid fa-wallet"></i> Método de Pago:</label>
+                        <select id="selectMetodoPago" onchange="cambiarMetodoPago()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
+                            <option value="Transferencia">Transferencia Bancaria</option>
+                        </select>
+                    </div>
+
+                    <div id="seccionEfectivo" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Efectivo Recibido ($):</label>
+                            <input type="number" step="0.01" id="inputMontoRecibido" oninput="calcularCambioEfectivo()" placeholder="0.00" class="w-full bg-white border-2 border-betesda-lightgreen rounded-xl p-2 text-xs font-mono font-bold outline-none focus:border-betesda-green">
+                        </div>
+                        <div class="flex justify-between items-center pt-1 border-t border-slate-200 text-xs">
+                            <span class="font-bold text-slate-600 uppercase">Cambio a Entregar:</span>
+                            <span id="lblCambioCalculado" class="font-mono font-extrabold text-rose-600 text-sm">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-betesda-lightgreen">
+                <button type="button" onclick="cerrarModalPago()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cancelar</button>
+                <button type="button" onclick="confirmarCobroFinal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow">Confirmar y Registrar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NUEVO ABONO -->
+    <div id="modalNuevoAbono" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-md space-y-4">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-hand-holding-dollar text-betesda-yellow"></i> Registrar Nuevo Abono
+                </h3>
+                <button onclick="cerrarModalNuevoAbono()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="bg-betesda-softgreen p-3.5 rounded-2xl border border-betesda-lightgreen space-y-1 text-xs">
+                <div class="flex justify-between font-bold text-betesda-darkgreen">
+                    <span id="abonoNotaFolio" class="text-sm text-betesda-green">NOTA-000</span>
+                    <span id="abonoPacienteNombre" class="text-slate-700">Paciente</span>
+                </div>
+                <div class="flex justify-between text-slate-600 pt-1">
+                    <span>Total Venta: <strong id="abonoTotalVenta">$0.00</strong></span>
+                    <span>Total Abonado: <strong id="abonoAcumulado">$0.00</strong></span>
+                </div>
+                <div class="flex justify-between font-extrabold text-rose-600 pt-1 border-t border-betesda-lightgreen">
+                    <span>Saldo Pendiente:</span>
+                    <span id="abonoSaldoPendiente">$0.00</span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex justify-between items-center text-xs">
+                    <label class="font-bold text-betesda-green uppercase">Monto del Nuevo Abono ($):</label>
+                    <button type="button" onclick="liquidarTotalAbono()" class="text-[10px] bg-betesda-yellow hover:bg-amber-500 text-betesda-darkgreen font-extrabold px-2.5 py-1 rounded-full border border-betesda-gold transition">
+                        <i class="fa-solid fa-check"></i> Liquidar Total
+                    </button>
+                </div>
+                <input type="number" step="0.01" id="inputMontoNuevoAbono" oninput="calcularNuevoSaldoRestante()" placeholder="0.00" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 text-xs font-mono font-bold outline-none focus:border-betesda-green">
+
+                <div class="flex justify-between items-center text-xs font-bold bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="text-slate-600 uppercase">Nuevo Saldo Restante:</span>
+                    <span id="lblNuevoSaldoRestante" class="font-mono text-sm text-rose-600">$0.00</span>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1.5"><i class="fa-solid fa-wallet"></i> Método de Pago:</label>
+                    <select id="selectMetodoPagoAbono" onchange="cambiarMetodoPagoAbono()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta de Crédito / Débito</option>
+                        <option value="Transferencia">Transferencia Bancaria</option>
+                    </select>
+                </div>
+
+                <div id="seccionEfectivoAbono" class="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Efectivo Recibido ($):</label>
+                        <input type="number" step="0.01" id="inputEfectivoAbono" oninput="calcularCambioAbono()" placeholder="0.00" class="w-full bg-white border-2 border-betesda-lightgreen rounded-xl p-2 text-xs font-mono font-bold outline-none focus:border-betesda-green">
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-slate-600 uppercase">Cambio:</span>
+                        <span id="lblCambioAbono" class="font-mono font-extrabold text-rose-600">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalNuevoAbono()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cancelar</button>
+                <button type="button" onclick="guardarAbonoRealizado()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow">Guardar e Imprimir Abono</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CANCELAR NOTA (CON VISTA PREVIA) -->
+    <div id="modalCancelarNota" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-rose-500 p-6 w-full max-w-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-rose-100 pb-2">
+                <h3 class="text-base font-bold text-rose-700 uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-ban text-rose-500"></i> Cancelar Nota de Venta
+                </h3>
+                <button onclick="cerrarModalCancelarNota()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <p class="text-xs text-slate-600">Ingresa el número de nota de hoy para visualizar su información antes de confirmar la cancelación.</p>
+
+            <div class="space-y-3">
+                <div class="flex gap-2 items-end">
+                    <div class="flex-grow">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Número de Nota (ej. NOTA-001):</label>
+                        <input type="text" id="inputNotaACancelar" placeholder="NOTA-001" oninput="this.value = this.value.toUpperCase()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 text-xs font-mono font-bold outline-none focus:border-rose-500 uppercase">
+                    </div>
+                    <button type="button" onclick="consultarNotaParaCancelar()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow transition flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-magnifying-glass"></i> Ver Información
+                    </button>
+                </div>
+
+                <!-- CONTENEDOR DE INFORMACIÓN DE LA NOTA -->
+                <div id="seccionInfoNotaCancelacion" class="bg-rose-50/60 p-3.5 rounded-2xl border-2 border-rose-200 space-y-2 hidden">
+                    <div class="font-bold text-rose-900 uppercase text-xs border-b border-rose-200 pb-1 flex justify-between">
+                        <span><i class="fa-solid fa-circle-info"></i> Información de la Nota</span>
+                        <span id="lblInfoNotaFecha" class="font-normal font-mono text-[10px]">--/--/----</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-slate-700">
+                        <div><strong>Paciente:</strong> <span id="lblInfoNotaPaciente">-</span></div>
+                        <div><strong>Total:</strong> <span id="lblInfoNotaTotal" class="font-mono font-bold text-rose-700">$0.00</span></div>
+                        <div><strong>Método Pago:</strong> <span id="lblInfoNotaPago">-</span></div>
+                        <div><strong>Estado:</strong> <span id="lblInfoNotaEstado">-</span></div>
+                    </div>
+                    <div class="text-[11px] text-slate-600 pt-1 border-t border-rose-200">
+                        <strong>Artículos:</strong>
+                        <div id="lblInfoNotaArticulos" class="font-medium text-slate-700 max-h-24 overflow-y-auto mt-1 space-y-1"></div>
+                    </div>
+                </div>
+
+                <div id="seccionMotivoCancelacion" class="space-y-2 hidden">
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Motivo de Cancelación:</label>
+                    <textarea id="inputMotivoCancelacion" rows="2" placeholder="Escriba el motivo detallado..." class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 text-xs font-medium outline-none focus:border-rose-500"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="cerrarModalCancelarNota()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cerrar</button>
+                <button type="button" id="btnConfirmarCancelacionFinal" onclick="ejecutarCancelacionNota()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Confirmar Cancelación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE VENTA -->
+    <div id="modalDetalleVenta" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-file-invoice text-betesda-yellow"></i> Detalle Completo de Venta
+                </h3>
+                <button onclick="cerrarModalDetalleVenta()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div id="contenidoDetalleVenta" class="space-y-3 text-xs"></div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalDetalleVenta()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">Cerrar</button>
+                <button id="btnMarcarEntregadoDesdeDetalle" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
+                    <i class="fa-solid fa-check-double"></i> Marcar como Entregado
+                </button>
+                <button id="btnReimprimirDesdeDetalle" type="button" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Reimprimir Ticket
+                </button>
+                <button id="btnOrdenLabDesdeDetalle" type="button" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
+                    <i class="fa-solid fa-glasses"></i> Orden de Lab
+                </button>
+                <button id="btnAbonarDesdeDetalle" type="button" class="bg-betesda-gold hover:bg-amber-600 text-white font-bold px-5 py-2 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> Registrar Abono
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VISTA PREVIA ORDEN DE LABORATORIO -->
+    <div id="modalVistaPreviaOrdenLab" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-glasses text-betesda-yellow"></i> Vista Previa - Orden de Laboratorio
+                </h3>
+                <button onclick="cerrarModalVistaPreviaOrdenLab()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="contenidoVistaPreviaOrdenLab" class="bg-slate-50 p-4 rounded-2xl border border-betesda-lightgreen text-xs space-y-2 font-mono"></div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalVistaPreviaOrdenLab()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cerrar</button>
+                <button id="btnImprimirDesdeModalLab" type="button" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-print"></i> Imprimir Orden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printArea" style="display: none;"></div>
+
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        let storedUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+        let usersDB = (storedUsers && storedUsers.length > 0) ? storedUsers : [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador', modulos: ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'loggin.html'] }];
+        let currentUser = null;
+        let sidebarTimer = null;
+
+        let productosDB = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
+        let micasDB = JSON.parse(localStorage.getItem('opti_betesda_micas')) || [];
+        let serviciosDB = JSON.parse(localStorage.getItem('opti_betesda_services')) || [];
+        let existenciasDB = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || JSON.parse(localStorage.getItem('opti_betesda_inventario')) || [];
+        let ventasRealizadasDB = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+        let cierresCajaDB = JSON.parse(localStorage.getItem('opti_betesda_cierres_caja')) || [];
+
+        let carrito = [];
+        let productoSeleccionadoTemporal = null;
+        let numeroNotaActual = parseInt(localStorage.getItem('opti_betesda_nota_num')) || 1;
+        let totalCalculadoVentaActual = 0;
+        let ventaAbonandoTemporal = null;
+        let ventaSeleccionadaLabTemporal = null;
+        let cierreCalculadoTemporal = null;
+
+        window.onload = function() {
+            checkSession();
+            actualizarDisplayNota();
+            setCamposActivos(false);
+            inicializarFechaHoy();
+            renderVentasDiarias();
+        };
+
+        function inicializarFechaHoy() {
+            const hoyStr = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            document.getElementById('lblFechaHoy').textContent = hoyStr;
+        }
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (currentUser.user !== 'Admin' && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { showToast("Usuario o contraseña incorrectos", "error"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function actualizarDisplayNota() {
+            document.getElementById('lblNotaNumero').textContent = `NOTA-${String(numeroNotaActual).padStart(3, '0')}`;
+        }
+
+        function setCamposActivos(activo) {
+            const ids = ['pacienteNombre', 'pacienteEdad', 'pacienteTelefono', 'pacienteDireccion', 'busquedaInput', 'cantidadItem'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                el.disabled = !activo;
+                if (activo) {
+                    el.classList.remove('bg-slate-100');
+                    el.classList.add('bg-slate-50');
+                } else {
+                    el.classList.remove('bg-slate-50');
+                    el.classList.add('bg-slate-100');
+                }
+            });
+            document.getElementById('btnAgregar').disabled = !activo;
+            document.getElementById('btnCobrar').disabled = !activo;
+            document.getElementById('btnCancelar').disabled = !activo;
+        }
+
+        function iniciarNuevaVenta() {
+            carrito = [];
+            document.getElementById('pacienteNombre').value = '';
+            document.getElementById('pacienteEdad').value = '';
+            document.getElementById('pacienteTelefono').value = '';
+            document.getElementById('pacienteDireccion').value = '';
+            document.getElementById('busquedaInput').value = '';
+            
+            actualizarDisplayNota();
+            setCamposActivos(true);
+            renderCarrito();
+            showToast("Nueva venta iniciada (Campos activos)", "success");
+        }
+
+        function cancelarVenta() {
+            if (confirm("¿Estás seguro de cancelar la venta actual? El número de nota no se consumirá.")) {
+                carrito = [];
+                document.getElementById('pacienteNombre').value = '';
+                document.getElementById('pacienteEdad').value = '';
+                document.getElementById('pacienteTelefono').value = '';
+                document.getElementById('pacienteDireccion').value = '';
+                renderCarrito();
+                setCamposActivos(false);
+                showToast("Venta cancelada. El número de nota se mantiene.", "info");
+            }
+        }
+
+        function obtenerExistenciaActual(productoId, marca, modelo) {
+            let totalExistencia = 0;
+            existenciasDB.forEach(item => {
+                const matchId = productoId && item.id && String(item.id) === String(productoId);
+                const matchDatos = marca && modelo && (item.marca || '').toLowerCase() === marca.toLowerCase() && (item.modelo || '').toLowerCase() === modelo.toLowerCase();
+                if (matchId || matchDatos) {
+                    totalExistencia += (parseInt(item.cantidad) || 0);
+                }
+            });
+            return totalExistencia;
+        }
+
+        function getExtractedLoteDigits(loteStr) {
+            if (!loteStr) return 'X000';
+            const clean = loteStr.trim();
+            if (clean.length === 0) return 'X000';
+            if (clean.length <= 4) return clean.toUpperCase();
+            const firstChar = clean.charAt(0);
+            const lastThree = clean.slice(-3);
+            return (firstChar + lastThree).toUpperCase();
+        }
+
+        function formatDateCode(dateStr) {
+            if (!dateStr) return '211026';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return '211026';
+            const yy = parts[0].slice(-2);
+            const mm = parts[1];
+            const dd = parts[2];
+            return `${dd}${mm}${yy}`;
+        }
+
+        function getBrandAndModelCodes(tipoNum, marcaStr, modeloStr) {
+            let database = JSON.parse(localStorage.getItem('opti_betesda_db')) || { "1": [], "2": [], "3": [] };
+            let modelosMap = JSON.parse(localStorage.getItem('opti_betesda_modelos')) || {};
+
+            let codeM = '01';
+            let codeMod = '01';
+
+            if (!marcaStr) return { codeM: '00', codeMod: '00' };
+            marcaStr = marcaStr.trim();
+
+            const listMarcas = database[tipoNum] || [];
+            let foundMarca = listMarcas.find(m => m.nombre.trim().toLowerCase() === marcaStr.toLowerCase());
+
+            if (foundMarca) {
+                codeM = foundMarca.id;
+            } else {
+                codeM = String(listMarcas.length + 1).padStart(2, '0');
+            }
+
+            if (!modeloStr) return { codeM, codeMod: '00' };
+            modeloStr = modeloStr.trim();
+
+            const key = `${tipoNum}_${codeM}`;
+            const listModelos = modelosMap[key] || [];
+            let foundModelo = listModelos.find(m => m.nombre.trim().toLowerCase() === modeloStr.toLowerCase());
+
+            if (foundModelo) {
+                codeMod = foundModelo.subNum;
+            } else {
+                codeMod = String(listModelos.length + 1).padStart(2, '0');
+            }
+
+            return { codeM, codeMod };
+        }
+
+        function obtenerSkuDeExistencia(item) {
+            if (item.sku) return item.sku;
+            let tipoNum = '1';
+            const t = (item.tipo || '').toLowerCase();
+            if (t.includes('accesorio') || t === '2') tipoNum = '2';
+            else if (t.includes('lente') || t === '3') tipoNum = '3';
+
+            const { codeM, codeMod } = getBrandAndModelCodes(tipoNum, item.marca, item.modelo);
+            const digitsLote = getExtractedLoteDigits(item.lote);
+            const dateCode = formatDateCode(item.fecha);
+            const qtyCode = String(Math.abs(item.cantidad) || 1).padStart(2, '0');
+
+            return `${tipoNum}${codeM}${codeMod}${digitsLote}${dateCode}${qtyCode}`;
+        }
+
+        function buscarProductos(query) {
+            const dropdown = document.getElementById('resultadosDropdown');
+            if (!query.trim()) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            serviciosDB = JSON.parse(localStorage.getItem('opti_betesda_services')) || [];
+            const q = query.toLowerCase().trim();
+            
+            const armazonesEnCarrito = carrito.filter(item => item.tipoArmazonVenta || item.rawProducto);
+            let tipoArmazonDetectado = null;
+            
+            if (armazonesEnCarrito.length > 0) {
+                const ultimoArmazon = armazonesEnCarrito[armazonesEnCarrito.length - 1];
+                const t = (ultimoArmazon.tipoArmazonVenta || '').toLowerCase();
+                if (t.includes('paciente')) tipoArmazonDetectado = 'paciente';
+                else if (t.includes('regalo')) tipoArmazonDetectado = 'regalo';
+                else tipoArmazonDetectado = 'linea';
+            }
+
+            let resultadosExactos = [];
+            let resultadosAproximados = [];
+
+            existenciasDB.forEach(ex => {
+                let skuCalculado = obtenerSkuDeExistencia(ex).toLowerCase();
+                let exMarca = (ex.marca || '').toLowerCase();
+                let exModelo = (ex.modelo || '').toLowerCase();
+                let exLote = (ex.lote || '').toLowerCase();
+                let exFolio = (ex.folio || '').toLowerCase();
+                let exCodigoEtiqueta = (ex.codigo || '').toLowerCase();
+
+                let esExacto = (skuCalculado === q || exMarca === q || exModelo === q || exLote === q || exFolio === q || exCodigoEtiqueta === q);
+                let esAproximado = (skuCalculado.includes(q) || exMarca.includes(q) || exModelo.includes(q) || exLote.includes(q) || exFolio.includes(q) || exCodigoEtiqueta.includes(q));
+
+                if (esExacto || esAproximado) {
+                    let stockActual = obtenerExistenciaActual(ex.id, ex.marca, ex.modelo);
+                    let prodMatch = productosDB.find(p => (p.marcaNombre || '').toLowerCase() === exMarca && (p.modeloNombre || '').toLowerCase() === exModelo);
+                    let precioVenta = prodMatch ? (parseFloat(prodMatch.precioVenta || prodMatch.precioLinea) || 0) : (parseFloat(ex.costo) * 1.5 || 0);
+
+                    let itemRes = {
+                        tipo: 'ARMAZON_UNICO',
+                        id: ex.id || Date.now(),
+                        sku: skuCalculado,
+                        nombre: `${ex.marca || 'S/M'} - ${ex.modelo || 'S/M'}`,
+                        detalles: `Stock: ${stockActual} pzs`,
+                        existencia: stockActual,
+                        precio: precioVenta,
+                        tipoArmazonVenta: 'Armazón de Línea',
+                        rawProducto: prodMatch || ex
+                    };
+
+                    if (esExacto) {
+                        if (!resultadosExactos.some(r => r.sku === skuCalculado)) resultadosExactos.push(itemRes);
+                    } else {
+                        if (!resultadosAproximados.some(r => r.sku === skuCalculado)) resultadosAproximados.push(itemRes);
+                    }
+                }
+            });
+
+            productosDB.forEach(p => {
+                let marcaLower = (p.marcaNombre || '').toLowerCase();
+                let modeloLower = (p.modeloNombre || '').toLowerCase();
+                let codigoProd = (p.codigo || p.sku || '').toLowerCase();
+
+                let esExacto = (marcaLower === q || modeloLower === q || codigoProd === q);
+                let esAproximado = (marcaLower.includes(q) || modeloLower.includes(q) || codigoProd.includes(q));
+
+                if (esExacto || esAproximado) {
+                    let stockActual = obtenerExistenciaActual(p.id, p.marcaNombre, p.modeloNombre);
+                    let itemRes = {
+                        tipo: 'ARMAZON_UNICO',
+                        id: p.id,
+                        nombre: `${p.marcaNombre} - ${p.modeloNombre}`,
+                        detalles: `Stock: ${stockActual} pzs`,
+                        existencia: stockActual,
+                        precio: parseFloat(p.precioVenta || p.precioLinea) || 0,
+                        tipoArmazonVenta: 'Armazón de Línea',
+                        rawProducto: p
+                    };
+
+                    if (esExacto) {
+                        if (!resultadosExactos.some(r => r.nombre === itemRes.nombre)) resultadosExactos.push(itemRes);
+                    } else {
+                        if (!resultadosAproximados.some(r => r.nombre === itemRes.nombre)) resultadosAproximados.push(itemRes);
+                    }
+                }
+            });
+
+            micasDB.forEach(m => {
+                let mNombre = (m.nombre || '').toLowerCase();
+                let mCodigo = (m.codigo || '').toLowerCase();
+                let mCat = (m.categoria || '').toLowerCase();
+
+                let esExacto = (mNombre === q || mCodigo === q || mCat === q);
+                let esAproximado = (mNombre.includes(q) || mCodigo.includes(q) || mCat.includes(q));
+
+                if (esExacto || esAproximado) {
+                    let precioLinea = parseFloat(m.precioLinea) || parseFloat(m.precio) || 0;
+                    let precioPaciente = parseFloat(m.precioPaciente) || precioLinea;
+                    let precioRegalo = parseFloat(m.precioRegalo || m.precioPromo) || 0;
+                    let proceso = m.tipoFabricacion || m.tipoProceso || m.proceso || 'Terminado';
+
+                    let itemRes = {
+                        tipo: 'MICA_OPCIONES',
+                        id: m.id,
+                        nombre: `${m.nombre} - ${m.linea}`,
+                        proceso: proceso,
+                        detalles: `Cat: ${m.categoria || 'N/A'}`,
+                        precios: { linea: precioLinea, paciente: precioPaciente, regalo: precioRegalo },
+                        rawMica: m
+                    };
+
+                    if (esExacto) resultadosExactos.push(itemRes);
+                    else resultadosAproximados.push(itemRes);
+                }
+            });
+
+            serviciosDB.forEach(s => {
+                let sNombre = (s.nombre || '').toLowerCase();
+                let sCodigo = (s.codigo || '').toLowerCase();
+
+                let esExacto = (sNombre === q || sCodigo === q);
+                let esAproximado = (sNombre.includes(q) || sCodigo.includes(q));
+
+                if (esExacto || esAproximado) {
+                    let itemRes = {
+                        tipo: 'SERVICIO',
+                        id: s.id,
+                        nombre: `Servicio: ${s.nombre}`,
+                        detalles: `Servicio Profesional`,
+                        precio: parseFloat(s.precio) || 0
+                    };
+
+                    if (esExacto) {
+                        if (!resultadosExactos.some(r => r.nombre === itemRes.nombre)) resultadosExactos.push(itemRes);
+                    } else {
+                        if (!resultadosAproximados.some(r => r.nombre === itemRes.nombre)) resultadosAproximados.push(itemRes);
+                    }
+                }
+            });
+
+            let resultadosFinales = [...resultadosExactos, ...resultadosAproximados];
+
+            if (resultadosFinales.length > 0) {
+                let html = '';
+                if (resultadosExactos.length > 0) {
+                    html += `<div class="bg-emerald-50 text-betesda-green px-3 py-1 text-[10px] font-extrabold uppercase border-b border-betesda-lightgreen">Coincidencias Exactas (${resultadosExactos.length})</div>`;
+                }
+                resultadosExactos.forEach(res => { html += renderizarItemDropdown(res, tipoArmazonDetectado); });
+
+                if (resultadosAproximados.length > 0) {
+                    html += `<div class="bg-slate-100 text-slate-600 px-3 py-1 text-[10px] font-extrabold uppercase border-b border-t border-slate-200">Coincidencias Aproximadas (${resultadosAproximados.length})</div>`;
+                }
+                resultadosAproximados.forEach(res => { html += renderizarItemDropdown(res, tipoArmazonDetectado); });
+
+                dropdown.innerHTML = html;
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">No se encontraron coincidencias.</div>`;
+                dropdown.classList.remove('hidden');
+            }
+        }
+
+        function renderizarItemDropdown(res, tipoArmazonDetectado) {
+            if (res.tipo === 'ARMAZON_UNICO' || (res.tipo === 'PRODUCTO' && res.rawProducto)) {
+                let stockBadgeClass = res.existencia > 0 ? 'bg-emerald-100 text-betesda-green' : 'bg-rose-100 text-rose-700 font-bold';
+                return `
+                    <div onclick='seleccionarArmazonUnico(${JSON.stringify(res)})' class="p-2.5 hover:bg-betesda-softgreen cursor-pointer border-b border-betesda-lightgreen text-xs flex justify-between items-center transition">
+                        <div class="font-bold text-betesda-darkgreen">
+                            <i class="fa-solid fa-glasses text-betesda-green"></i> ${res.nombre}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] ${stockBadgeClass} px-2 py-0.5 rounded-full font-extrabold uppercase">Stock: ${res.existencia}</span>
+                            <span class="font-mono font-extrabold text-sm text-betesda-green">$${res.precio.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (res.tipo === 'MICA_OPCIONES') {
+                let badgeProcesoColor = res.proceso.toLowerCase().includes('tallado') ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
+
+                if (tipoArmazonDetectado) {
+                    let precioAplicable = res.precios[tipoArmazonDetectado];
+                    return `
+                        <div onclick='seleccionarMicaModalidad(${JSON.stringify(res)}, "${tipoArmazonDetectado}", ${precioAplicable})' class="p-2.5 hover:bg-betesda-lightgreen cursor-pointer border-b border-betesda-lightgreen text-xs flex justify-between items-center transition">
+                            <div class="font-bold text-betesda-darkgreen">
+                                <i class="fa-solid fa-eye text-betesda-green"></i> ${res.nombre}
+                            </div>
+                            <span class="font-mono font-extrabold text-sm text-betesda-green">$${precioAplicable.toFixed(2)}</span>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="p-2.5 hover:bg-betesda-softgreen border-b border-betesda-lightgreen text-xs space-y-1.5">
+                            <div class="font-bold text-betesda-darkgreen flex justify-between items-center">
+                                <span><i class="fa-solid fa-eye text-betesda-green"></i> ${res.nombre}</span>
+                                <span class="text-[10px] ${badgeProcesoColor} px-2 py-0.5 rounded-full font-extrabold uppercase">${res.proceso}</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1 pt-1">
+                                <button onclick='seleccionarMicaModalidad(${JSON.stringify(res)}, "linea", ${res.precios.linea})' class="bg-betesda-green hover:bg-betesda-darkgreen text-white text-[10px] font-bold py-1 px-1 rounded text-center transition shadow-sm">
+                                    Línea: $${res.precios.linea.toFixed(2)}
+                                </button>
+                                <button onclick='seleccionarMicaModalidad(${JSON.stringify(res)}, "paciente", ${res.precios.paciente})' class="bg-betesda-gold hover:bg-amber-600 text-white text-[10px] font-bold py-1 px-1 rounded text-center transition shadow-sm">
+                                    Paciente: $${res.precios.paciente.toFixed(2)}
+                                </button>
+                                <button onclick='seleccionarMicaModalidad(${JSON.stringify(res)}, "regalo", ${res.precios.regalo})' class="bg-slate-600 hover:bg-slate-700 text-white text-[10px] font-bold py-1 px-1 rounded text-center transition shadow-sm">
+                                    Regalo: $${res.precios.regalo.toFixed(2)}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else if (res.tipo === 'SERVICIO') {
+                return `
+                    <div onclick='seleccionarResultado(${JSON.stringify(res)})' class="p-2.5 hover:bg-betesda-lightgreen cursor-pointer border-b border-betesda-lightgreen text-xs flex justify-between items-center transition">
+                        <div class="font-bold text-betesda-darkgreen">
+                            <i class="fa-solid fa-screwdriver-wrench text-betesda-gold"></i> ${res.nombre}
+                        </div>
+                        <span class="font-mono font-extrabold text-sm text-betesda-green">$${res.precio.toFixed(2)}</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div onclick='seleccionarResultado(${JSON.stringify(res)})' class="p-2.5 hover:bg-betesda-lightgreen cursor-pointer text-xs border-b border-slate-100 flex justify-between items-center">
+                        <span class="font-bold text-betesda-darkgreen">${res.nombre}</span>
+                        <span class="font-mono font-extrabold text-betesda-green">$${res.precio.toFixed(2)}</span>
+                    </div>
+                `;
+            }
+        }
+
+        function seleccionarArmazonUnico(res) {
+            productoSeleccionadoTemporal = {
+                id: res.id,
+                tipo: 'PRODUCTO',
+                nombre: `${res.nombre}`,
+                precio: res.precio,
+                tipoArmazonVenta: res.tipoArmazonVenta || 'Armazón de Línea',
+                rawProducto: res.rawProducto
+            };
+            document.getElementById('busquedaInput').value = `${res.nombre} - $${res.precio.toFixed(2)}`;
+            document.getElementById('resultadosDropdown').classList.add('hidden');
+        }
+
+        function seleccionarMicaModalidad(res, modalidad, precio) {
+            productoSeleccionadoTemporal = {
+                id: res.id,
+                tipo: 'MICA',
+                nombre: `${res.nombre}`,
+                precio: precio,
+                modalidadInicial: modalidad,
+                rawMica: res.rawMica
+            };
+            document.getElementById('busquedaInput').value = `${res.nombre} - $${precio.toFixed(2)}`;
+            document.getElementById('resultadosDropdown').classList.add('hidden');
+        }
+
+        function seleccionarResultado(item) {
+            productoSeleccionadoTemporal = item;
+            document.getElementById('busquedaInput').value = `${item.nombre} - $${item.precio.toFixed(2)}`;
+            document.getElementById('resultadosDropdown').classList.add('hidden');
+        }
+
+        function agregarSeleccionadoManual() {
+            if (!productoSeleccionadoTemporal) {
+                showToast("Selecciona un producto o servicio del buscador primero", "error");
+                return;
+            }
+
+            const cantidad = parseInt(document.getElementById('cantidadItem').value) || 1;
+
+            carrito.push({
+                id: productoSeleccionadoTemporal.id,
+                tipo: productoSeleccionadoTemporal.tipo,
+                nombre: productoSeleccionadoTemporal.nombre,
+                precio: productoSeleccionadoTemporal.precio,
+                cantidad: cantidad,
+                descuentoPorcentaje: 0,
+                modalidadInicial: productoSeleccionadoTemporal.modalidadInicial || 'linea',
+                rx: null,
+                rawMica: productoSeleccionadoTemporal.rawMica || null,
+                rawProducto: productoSeleccionadoTemporal.rawProducto || null,
+                tipoArmazonVenta: productoSeleccionadoTemporal.tipoArmazonVenta || null
+            });
+
+            productoSeleccionadoTemporal = null;
+            document.getElementById('busquedaInput').value = '';
+            document.getElementById('cantidadItem').value = '1';
+
+            renderCarrito();
+            showToast("Concepto agregado a la venta", "success");
+        }
+
+        function actualizarDescuentoItem(index, valor) {
+            let desc = parseFloat(valor);
+            if (isNaN(desc) || desc < 0) desc = 0;
+            if (desc > 100) desc = 100;
+            carrito[index].descuentoPorcentaje = desc;
+            renderCarrito();
+        }
+
+        function eliminarDelCarrito(index) {
+            carrito.splice(index, 1);
+            renderCarrito();
+        }
+
+        function renderCarrito() {
+            const tbody = document.getElementById('carritoTableBody');
+            if (!tbody) return;
+
+            if (carrito.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No hay productos ni servicios agregados a la venta.</td></tr>`;
+                document.getElementById('lblSubtotal').textContent = '$0.00';
+                document.getElementById('lblIva').textContent = '$0.00';
+                document.getElementById('lblTotal').textContent = '$0.00';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            let subtotalGlobal = 0;
+
+            carrito.forEach((item, index) => {
+                let descPct = item.descuentoPorcentaje || 0;
+                let precioUnitarioBase = item.precio;
+                let montoDescuentoUnitario = (precioUnitarioBase * descPct) / 100;
+                let precioUnitarioFinal = precioUnitarioBase - montoDescuentoUnitario;
+                let subtotalItem = precioUnitarioFinal * item.cantidad;
+                subtotalGlobal += subtotalItem;
+
+                let rxHtml = '';
+                if (item.rx) {
+                    rxHtml = `
+                        <div class="mt-1 bg-emerald-50 border border-emerald-200 p-1.5 rounded text-[10px] font-mono text-slate-700">
+                            <div><strong>Armazón:</strong> <span class="uppercase font-bold text-betesda-green">${item.rx.tipoArmazon}</span></div>
+                            <div><strong>OD:</strong> ESF: ${item.rx.od.esf} | CIL: ${item.rx.od.cil} | EJE: ${item.rx.od.eje}° | ADD: ${item.rx.od.add} | AO: ${item.rx.od.ao} | D.I.: ${item.rx.od.di} mm</div>
+                            <div><strong>OI:</strong> ESF: ${item.rx.oi.esf} | CIL: ${item.rx.oi.cil} | EJE: ${item.rx.oi.eje}° | ADD: ${item.rx.oi.add} | AO: ${item.rx.oi.ao} | D.I.: ${item.rx.oi.di} mm</div>
+                        </div>
+                    `;
+                }
+
+                let precioDesglosadoHtml = `<div class="font-mono">$${precioUnitarioBase.toFixed(2)}</div>`;
+                if (descPct > 0) {
+                    precioDesglosadoHtml = `
+                        <div class="font-mono">
+                            <span class="line-through text-slate-400 text-[10px]">$${precioUnitarioBase.toFixed(2)}</span>
+                            <div class="text-betesda-green font-bold">$${precioUnitarioFinal.toFixed(2)}</div>
+                            <span class="text-[9px] text-rose-600 font-semibold">(-$${montoDescuentoUnitario.toFixed(2)})</span>
+                        </div>
+                    `;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen">
+                        <td class="p-2">
+                            <div class="font-semibold">${item.nombre}</div>
+                            ${rxHtml}
+                        </td>
+                        <td class="p-2 text-center font-bold">${item.cantidad}</td>
+                        <td class="p-2 text-right">${precioDesglosadoHtml}</td>
+                        <td class="p-2 text-center">
+                            <input type="number" min="0" max="100" value="${descPct}" oninput="actualizarDescuentoItem(${index}, this.value)" class="w-14 bg-slate-50 border border-betesda-lightgreen rounded-lg p-1 text-xs text-center font-mono font-bold outline-none focus:border-betesda-green">
+                        </td>
+                        <td class="p-2 text-right font-mono font-bold text-betesda-darkgreen">$${subtotalItem.toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="eliminarDelCarrito(${index})" class="text-rose-500 hover:text-rose-700 p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            const ivaGlobal = subtotalGlobal * 0.16;
+            const totalGlobal = subtotalGlobal + ivaGlobal;
+            totalCalculadoVentaActual = totalGlobal;
+
+            document.getElementById('lblSubtotal').textContent = `$${subtotalGlobal.toFixed(2)}`;
+            document.getElementById('lblIva').textContent = `$${ivaGlobal.toFixed(2)}`;
+            document.getElementById('lblTotal').textContent = `$${totalGlobal.toFixed(2)}`;
+        }
+
+        function prepararCobroVenta() {
+            if (carrito.length === 0) {
+                showToast("El carrito de venta está vacío", "error");
+                return;
+            }
+
+            const micaSinRx = carrito.find(item => item.tipo === 'MICA' && !item.rx);
+            if (micaSinRx) {
+                document.getElementById('modalMicaNombre').textContent = micaSinRx.nombre;
+                ['od_esf', 'od_cil', 'od_eje', 'od_add', 'od_ao', 'od_di', 'oi_esf', 'oi_cil', 'oi_eje', 'oi_add', 'oi_ao', 'oi_di'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('tipoArmazonMica').value = micaSinRx.modalidadInicial || 'linea';
+                document.getElementById('modalDioptrias').classList.remove('hidden');
+                return;
+            }
+
+            abrirModalPago();
+        }
+
+        function guardarMicaConCotejoAutomatico() {
+            const tipoArmazonVal = document.getElementById('tipoArmazonMica').value;
+
+            const rxData = {
+                tipoArmazon: tipoArmazonVal === 'linea' ? 'Armazón de Línea' : tipoArmazonVal === 'paciente' ? 'Armazón Paciente' : 'Armazón de Regalo',
+                od: {
+                    esf: document.getElementById('od_esf').value.trim() || '0.00',
+                    cil: document.getElementById('od_cil').value.trim() || '0.00',
+                    eje: document.getElementById('od_eje').value.trim() || '-',
+                    add: document.getElementById('od_add').value.trim() || '-',
+                    ao: document.getElementById('od_ao').value.trim() || '-',
+                    di: document.getElementById('od_di').value.trim() || '-'
+                },
+                oi: {
+                    esf: document.getElementById('oi_esf').value.trim() || '0.00',
+                    cil: document.getElementById('oi_cil').value.trim() || '0.00',
+                    eje: document.getElementById('oi_eje').value.trim() || '-',
+                    add: document.getElementById('oi_add').value.trim() || '-',
+                    ao: document.getElementById('oi_ao').value.trim() || '-',
+                    di: document.getElementById('oi_di').value.trim() || '-'
+                }
+            };
+
+            document.getElementById('modalDioptrias').classList.add('hidden');
+            
+            const micaItem = carrito.find(item => item.tipo === 'MICA' && !item.rx);
+            if (micaItem) {
+                micaItem.rx = rxData;
+
+                if (micaItem.rawMica) {
+                    const m = micaItem.rawMica;
+                    let precioBase = 0;
+                    if (tipoArmazonVal === 'linea') {
+                        precioBase = parseFloat(m.precioLinea) || parseFloat(m.precioPaciente) || parseFloat(m.precio) || 0;
+                    } else if (tipoArmazonVal === 'paciente') {
+                        precioBase = parseFloat(m.precioPaciente) || parseFloat(m.precioLinea) || parseFloat(m.precio) || 0;
+                    } else if (tipoArmazonVal === 'regalo') {
+                        precioBase = parseFloat(m.precioRegalo) || parseFloat(m.precioPromo) || 0;
+                    }
+
+                    let maxEsf = Math.max(Math.abs(parseFloat(rxData.od.esf) || 0), Math.abs(parseFloat(rxData.oi.esf) || 0));
+                    let maxCil = Math.max(Math.abs(parseFloat(rxData.od.cil) || 0), Math.abs(parseFloat(rxData.oi.cil) || 0));
+
+                    let micaCatalogoActualizada = micasDB.find(item => 
+                        item.nombre === m.nombre && 
+                        item.linea === m.linea && 
+                        maxEsf >= (parseFloat(item.rangoEsfMin) || 0) && 
+                        maxEsf <= (parseFloat(item.rangoEsfMax) || 999) &&
+                        maxCil >= (parseFloat(item.rangoCilMin) || 0) && 
+                        maxCil <= (parseFloat(item.rangoCilMax) || 999)
+                    );
+
+                    if (micaCatalogoActualizada) {
+                        if (tipoArmazonVal === 'linea') precioBase = parseFloat(micaCatalogoActualizada.precioLinea) || precioBase;
+                        else if (tipoArmazonVal === 'paciente') precioBase = parseFloat(micaCatalogoActualizada.precioPaciente) || precioBase;
+                        else if (tipoArmazonVal === 'regalo') precioBase = parseFloat(micaCatalogoActualizada.precioRegalo) || precioBase;
+                    } else if (m.precioExcedente && maxEsf > (parseFloat(m.rangoEsfMax) || 4.00)) {
+                        precioBase += parseFloat(m.precioExcedente);
+                    }
+
+                    micaItem.precio = precioBase;
+                }
+            }
+
+            renderCarrito();
+            prepararCobroVenta();
+        }
+
+        function cerrarModalDioptrias() {
+            document.getElementById('modalDioptrias').classList.add('hidden');
+            const micaItem = carrito.find(item => item.tipo === 'MICA' && !item.rx);
+            if (micaItem) {
+                micaItem.rx = { tipoArmazon: 'No especificado', od: {}, oi: {} };
+            }
+            renderCarrito();
+            prepararCobroVenta();
+        }
+
+        function abrirModalPago() {
+            document.getElementById('lblModalTotalPagar').textContent = `$${totalCalculadoVentaActual.toFixed(2)}`;
+            
+            const tieneMica = carrito.some(item => item.tipo === 'MICA' || item.rx);
+            const tipoCobroVal = document.getElementById('selectTipoCobro').value;
+            const contenedorFecha = document.getElementById('contenedorFechaEntrega');
+
+            if (tieneMica || tipoCobroVal === 'Anticipo') {
+                contenedorFecha.classList.remove('hidden');
+                let fechaSugerida = new Date();
+                fechaSugerida.setDate(fechaSugerida.getDate() + 4);
+                document.getElementById('inputFechaEntrega').value = fechaSugerida.toISOString().split('T')[0];
+            } else {
+                contenedorFecha.classList.add('hidden');
+                document.getElementById('inputFechaEntrega').value = '';
+            }
+
+            document.getElementById('selectTipoCobro').value = 'Total';
+            document.getElementById('seccionAnticipo').classList.add('hidden');
+            
+            document.getElementById('selectMetodoPago').value = 'Efectivo';
+            document.getElementById('inputMontoRecibido').value = totalCalculadoVentaActual.toFixed(2);
+            document.getElementById('lblCambioCalculado').textContent = '$0.00';
+            document.getElementById('seccionEfectivo').classList.remove('hidden');
+            
+            document.getElementById('modalPago').classList.remove('hidden');
+        }
+
+        function cerrarModalPago() {
+            document.getElementById('modalPago').classList.add('hidden');
+        }
+
+        function cambiarTipoCobro() {
+            const tipo = document.getElementById('selectTipoCobro').value;
+            const seccionAnticipo = document.getElementById('seccionAnticipo');
+            const contenedorFecha = document.getElementById('contenedorFechaEntrega');
+            const tieneMica = carrito.some(item => item.tipo === 'MICA' || item.rx);
+
+            if (tipo === 'Anticipo') {
+                seccionAnticipo.classList.remove('hidden');
+                contenedorFecha.classList.remove('hidden');
+                let fechaSugerida = new Date();
+                fechaSugerida.setDate(fechaSugerida.getDate() + 4);
+                if(!document.getElementById('inputFechaEntrega').value) {
+                    document.getElementById('inputFechaEntrega').value = fechaSugerida.toISOString().split('T')[0];
+                }
+                aplicar50PorCientoSugerido();
+            } else {
+                seccionAnticipo.classList.add('hidden');
+                if (!tieneMica) {
+                    contenedorFecha.classList.add('hidden');
+                }
+                document.getElementById('inputMontoRecibido').value = totalCalculadoVentaActual.toFixed(2);
+                calcularCambioEfectivo();
+            }
+        }
+
+        function aplicar50PorCientoSugerido() {
+            const mitad = totalCalculadoVentaActual / 2;
+            document.getElementById('inputMontoAnticipo').value = mitad.toFixed(2);
+            calcularSaldoPendiente();
+        }
+
+        function calcularSaldoPendiente() {
+            const anticipo = parseFloat(document.getElementById('inputMontoAnticipo').value) || 0;
+            const saldo = totalCalculadoVentaActual - anticipo;
+            document.getElementById('lblSaldoPendiente').textContent = `$${saldo.toFixed(2)}`;
+            
+            if (document.getElementById('selectMetodoPago').value === 'Efectivo') {
+                document.getElementById('inputMontoRecibido').value = anticipo.toFixed(2);
+                calcularCambioEfectivo();
+            }
+        }
+
+        function cambiarMetodoPago() {
+            const metodo = document.getElementById('selectMetodoPago').value;
+            const seccionEfectivo = document.getElementById('seccionEfectivo');
+            if (metodo === 'Efectivo') {
+                seccionEfectivo.classList.remove('hidden');
+            } else {
+                seccionEfectivo.classList.add('hidden');
+            }
+        }
+
+        function calcularCambioEfectivo() {
+            const tipoCobro = document.getElementById('selectTipoCobro').value;
+            const metaACobrar = tipoCobro === 'Anticipo' ? (parseFloat(document.getElementById('inputMontoAnticipo').value) || 0) : totalCalculadoVentaActual;
+            
+            const recibido = parseFloat(document.getElementById('inputMontoRecibido').value) || 0;
+            const cambio = recibido - metaACobrar;
+            const lbl = document.getElementById('lblCambioCalculado');
+            if (cambio >= 0) {
+                lbl.textContent = `$${cambio.toFixed(2)}`;
+                lbl.classList.remove('text-rose-600');
+                lbl.classList.add('text-betesda-green');
+            } else {
+                lbl.textContent = `Faltan $${Math.abs(cambio).toFixed(2)}`;
+                lbl.classList.remove('text-betesda-green');
+                lbl.classList.add('text-rose-600');
+            }
+        }
+
+        function confirmarCobroFinal() {
+            const tipoCobro = document.getElementById('selectTipoCobro').value;
+            const tieneMica = carrito.some(item => item.tipo === 'MICA' || item.rx);
+            const fechaEntrega = document.getElementById('inputFechaEntrega').value;
+
+            if ((tieneMica || tipoCobro === 'Anticipo') && !fechaEntrega) {
+                alert("Por favor selecciona una fecha estimada de entrega.");
+                return;
+            }
+
+            let montoCobradoAhora = totalCalculadoVentaActual;
+            let saldoPendiente = 0;
+
+            if (tipoCobro === 'Anticipo') {
+                montoCobradoAhora = parseFloat(document.getElementById('inputMontoAnticipo').value) || 0;
+                if (montoCobradoAhora <= 0 || montoCobradoAhora > totalCalculadoVentaActual) {
+                    alert("Por favor ingresa un monto de anticipo válido.");
+                    return;
+                }
+                saldoPendiente = totalCalculadoVentaActual - montoCobradoAhora;
+            }
+
+            const metodoPago = document.getElementById('selectMetodoPago').value;
+            if (metodoPago === 'Efectivo') {
+                const recibido = parseFloat(document.getElementById('inputMontoRecibido').value) || 0;
+                if (Math.round(recibido * 100) < Math.round(montoCobradoAhora * 100)) {
+                    alert("El monto recibido en efectivo es menor al importe a cobrar.");
+                    return;
+                }
+            }
+
+            document.getElementById('modalPago').classList.add('hidden');
+            ejecutarCobroVentaFinal(metodoPago, fechaEntrega || 'No aplica', tipoCobro, montoCobradoAhora, saldoPendiente);
+        }
+
+        function ejecutarCobroVentaFinal(metodoPago, fechaEntrega, tipoCobro, montoCobradoAhora, saldoPendiente) {
+            const notaNum = document.getElementById('lblNotaNumero').textContent;
+            const fechaStr = new Date().toISOString().split('T')[0];
+            const horaStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            const pNombre = document.getElementById('pacienteNombre').value.trim() || 'Público General';
+            const pEdad = document.getElementById('pacienteEdad').value.trim() || 'N/A';
+            const pTel = document.getElementById('pacienteTelefono').value.trim() || 'N/A';
+            const pDir = document.getElementById('pacienteDireccion').value.trim() || 'N/A';
+            const vendedorActivo = currentUser ? currentUser.user : 'Admin';
+
+            carrito.forEach(item => {
+                if (item.tipo === 'PRODUCTO' && item.rawProducto) {
+                    let prod = item.rawProducto;
+                    let existenciaEncontrada = existenciasDB.find(ex => {
+                        const matchId = prod.id && ex.id && String(ex.id) === String(prod.id);
+                        const matchDatos = (ex.marca || '').toLowerCase() === (prod.marcaNombre || '').toLowerCase() && 
+                                           (ex.modelo || '').toLowerCase() === (prod.modeloNombre || '').toLowerCase();
+                        return (matchId || matchDatos) && ex.lote !== 'VENTA';
+                    });
+
+                    if (existenciaEncontrada) {
+                        existenciaEncontrada.cantidad = (parseInt(existenciaEncontrada.cantidad) || 0) - Math.abs(item.cantidad);
+                    }
+                }
+            });
+
+            const tieneMicaVenta = carrito.some(item => item.tipo === 'MICA' || item.rx);
+            const estadoTallerInicial = tieneMicaVenta ? 'En Taller' : 'Entregado';
+
+            const nuevaVentaRealizada = {
+                nota: notaNum,
+                fecha: fechaStr,
+                hora: horaStr,
+                fechaEntrega: fechaEntrega,
+                paciente: pNombre,
+                edad: pEdad,
+                telefono: pTel,
+                direccion: pDir,
+                vendedor: vendedorActivo,
+                metodoPago: metodoPago,
+                tipoCobro: tipoCobro,
+                montoCobradoAhora: montoCobradoAhora,
+                saldoPendiente: saldoPendiente,
+                total: totalCalculadoVentaActual,
+                estadoTaller: estadoTallerInicial,
+                historialAbonos: [
+                    { fecha: fechaStr, hora: horaStr, monto: montoCobradoAhora, metodo: metodoPago, notaAbono: 'Primer Pago / Anticipo' }
+                ],
+                items: [...carrito]
+            };
+
+            ventasRealizadasDB.unshift(nuevaVentaRealizada);
+            localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            localStorage.setItem('opti_betesda_existencias', JSON.stringify(existenciasDB));
+
+            generarImpresionTicket(nuevaVentaRealizada);
+            renderVentasDiarias();
+
+            showToast("¡Venta cobrada con éxito!", "success");
+
+            numeroNotaActual++;
+            localStorage.setItem('opti_betesda_nota_num', numeroNotaActual);
+
+            carrito = [];
+            renderCarrito();
+            setCamposActivos(false);
+            actualizarDisplayNota();
+        }
+
+        function renderVentasDiarias() {
+            const tbody = document.getElementById('tablaVentasDiariasBody');
+            const lblTotalDia = document.getElementById('lblTotalVentasDia');
+            const lblCountDia = document.getElementById('lblCountVentasDia');
+            const query = (document.getElementById('busquedaVentasInput')?.value || '').toLowerCase().trim();
+            if (!tbody) return;
+
+            const hoyStr = new Date().toISOString().split('T')[0];
+            let listaVentas = [];
+
+            if (query) {
+                listaVentas = ventasRealizadasDB.filter(v => 
+                    v.nota.toLowerCase().includes(query) || 
+                    v.paciente.toLowerCase().includes(query) ||
+                    (v.telefono && v.telefono.toLowerCase().includes(query))
+                );
+            } else {
+                listaVentas = ventasRealizadasDB.filter(v => v.fecha === hoyStr);
+            }
+
+            if (listaVentas.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No se encontraron ventas registradas.</td></tr>`;
+                lblTotalDia.textContent = '$0.00';
+                lblCountDia.textContent = '0';
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            listaVentas.forEach(v => {
+                let cobrado = v.montoCobradoAhora !== undefined ? v.montoCobradoAhora : v.total;
+
+                let badgeEstado = (v.saldoPendiente > 0)
+                    ? `<span class="block text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded border border-amber-200">Anticipo (Pend: $${v.saldoPendiente.toFixed(2)})</span>`
+                    : `<span class="block text-[9px] bg-emerald-100 text-betesda-green font-extrabold px-1.5 py-0.5 rounded border border-emerald-200">Pagado 100%</span>`;
+
+                if (v.cancelada) {
+                    badgeEstado = `<span class="block text-[9px] bg-rose-100 text-rose-800 font-extrabold px-1.5 py-0.5 rounded border border-rose-200">CANCELADA</span>`;
+                }
+
+                let estadoTallerVal = v.estadoTaller || (v.items.some(item => item.tipo === 'MICA' || item.rx) ? 'En Taller' : 'Entregado');
+                
+                let badgeTaller = '';
+                if (v.cancelada) {
+                    badgeTaller = `<span class="block mt-1 text-[9px] bg-slate-100 text-slate-500 font-extrabold px-1.5 py-0.5 rounded border border-slate-200 text-center">N/A</span>`;
+                } else if (estadoTallerVal === 'En Taller') {
+                    badgeTaller = `<span class="block mt-1 text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded border border-amber-300 text-center">En Taller</span>`;
+                } else if (estadoTallerVal === 'En Espera') {
+                    badgeTaller = `<span class="block mt-1 text-[9px] bg-blue-100 text-blue-800 font-extrabold px-1.5 py-0.5 rounded border border-blue-300 text-center">En Espera</span>`;
+                } else {
+                    badgeTaller = `<span class="block mt-1 text-[9px] bg-emerald-100 text-betesda-green font-extrabold px-1.5 py-0.5 rounded border border-emerald-300 text-center">Entregado</span>`;
+                }
+
+                let btnMarcarEntregadoRow = (!v.cancelada && estadoTallerVal !== 'Entregado')
+                    ? `<button onclick="marcarEntregadoDirecto('${v.nota}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Marcar como Entregado"><i class="fa-solid fa-check-double"></i></button>`
+                    : '';
+
+                let btnAbonar = (!v.cancelada && v.saldoPendiente > 0)
+                    ? `<button onclick="abrirModalAbonar('${v.nota}')" class="bg-betesda-gold hover:bg-amber-600 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Registrar Abono"><i class="fa-solid fa-hand-holding-dollar"></i></button>`
+                    : '';
+
+                let tieneMica = v.items.some(item => item.tipo === 'MICA' || item.rx);
+                let btnOrdenLab = (!v.cancelada && tieneMica) 
+                    ? `<button onclick="abrirVistaPreviaOrdenLaboratorio('${v.nota}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Vista Previa Orden de Laboratorio"><i class="fa-solid fa-glasses"></i></button>`
+                    : '';
+
+                let rowStyle = v.cancelada ? 'opacity-60 bg-rose-50/50' : '';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen ${rowStyle}">
+                        <td class="p-2 font-mono">
+                            <span class="font-bold text-betesda-darkgreen">${v.nota}</span>
+                            <span class="block text-[10px] text-slate-400">${v.fecha} - ${v.hora}</span>
+                        </td>
+                        <td class="p-2 font-medium">
+                            <div>${v.paciente}</div>
+                            ${badgeEstado}
+                        </td>
+                        <td class="p-2 text-center">
+                            <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-1.5 py-0.5 rounded border border-slate-200">${v.metodoPago}</span>
+                            ${badgeTaller}
+                        </td>
+                        <td class="p-2 text-right font-mono font-bold text-betesda-green">$${v.cancelada ? '0.00' : cobrado.toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button onclick="verDetalleVenta('${v.nota}')" class="bg-betesda-green hover:bg-betesda-darkgreen text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Ver detalle completo">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                <button onclick="reimprimirTicket('${v.nota}')" class="bg-slate-600 hover:bg-slate-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Reimprimir Ticket">
+                                    <i class="fa-solid fa-print"></i>
+                                </button>
+                                ${btnOrdenLab}
+                                ${btnAbonar}
+                                ${btnMarcarEntregadoRow}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (query) {
+                let vigentes = listaVentas.filter(v => !v.cancelada);
+                lblTotalDia.textContent = `$${vigentes.reduce((acc, v) => acc + (v.montoCobradoAhora !== undefined ? v.montoCobradoAhora : v.total), 0).toFixed(2)}`;
+                lblCountDia.textContent = listaVentas.length;
+            } else {
+                let ventasHoy = ventasRealizadasDB.filter(v => v.fecha === hoyStr && !v.cancelada);
+                let todasHoy = ventasRealizadasDB.filter(v => v.fecha === hoyStr);
+                lblTotalDia.textContent = `$${ventasHoy.reduce((acc, v) => acc + (v.montoCobradoAhora !== undefined ? v.montoCobradoAhora : v.total), 0).toFixed(2)}`;
+                lblCountDia.textContent = todasHoy.length;
+            }
+        }
+
+        /* --- MÓDULO CIERRE DE CAJA --- */
+        function abrirModalCierreCaja() {
+            const hoyStr = new Date().toISOString().split('T')[0];
+            const ventasHoy = ventasRealizadasDB.filter(v => v.fecha === hoyStr);
+
+            let efec = 0, tarj = 0, transf = 0;
+            let countVigentes = 0, countCanceladas = 0, montoCancelado = 0;
+
+            ventasHoy.forEach(v => {
+                if (v.cancelada) {
+                    countCanceladas++;
+                    montoCancelado += (v.montoCobradoAhora !== undefined ? v.montoCobradoAhora : v.total);
+                } else {
+                    countVigentes++;
+                    let abonos = v.historialAbonos || [{ monto: v.montoCobradoAhora || v.total, metodo: v.metodoPago }];
+                    abonos.forEach(ab => {
+                        const met = (ab.metodo || 'Efectivo').toLowerCase();
+                        if (met.includes('tarjeta')) tarj += ab.monto;
+                        else if (met.includes('transfer')) transf += ab.monto;
+                        else efec += ab.monto;
+                    });
+                }
+            });
+
+            const totalNeto = efec + tarj + transf;
+
+            cierreCalculadoTemporal = {
+                fecha: hoyStr,
+                hora: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+                usuario: currentUser ? currentUser.user : 'Admin',
+                efectivo: efec,
+                tarjeta: tarj,
+                transferencia: transf,
+                totalNeto: totalNeto,
+                countVigentes: countVigentes,
+                countCanceladas: countCanceladas,
+                montoCancelado: montoCancelado
+            };
+
+            document.getElementById('cierreFechaHoy').textContent = new Date().toLocaleDateString('es-MX');
+            document.getElementById('cierreUsuario').textContent = cierreCalculadoTemporal.usuario;
+            document.getElementById('cierreMontoEfectivo').textContent = `$${efec.toFixed(2)}`;
+            document.getElementById('cierreMontoTarjeta').textContent = `$${tarj.toFixed(2)}`;
+            document.getElementById('cierreMontoTransferencia').textContent = `$${transf.toFixed(2)}`;
+            document.getElementById('cierreMontoTotalNeto').textContent = `$${totalNeto.toFixed(2)}`;
+
+            document.getElementById('cierreCountVentas').textContent = countVigentes;
+            document.getElementById('cierreCountCanceladas').textContent = countCanceladas;
+            document.getElementById('cierreMontoCancelado').textContent = `$${montoCancelado.toFixed(2)}`;
+
+            document.getElementById('modalCierreCaja').classList.remove('hidden');
+        }
+
+        function cerrarModalCierreCaja() {
+            document.getElementById('modalCierreCaja').classList.add('hidden');
+        }
+
+        function ejecutarImpresionCierreCaja() {
+            if (!cierreCalculadoTemporal) return;
+
+            cierresCajaDB.unshift(cierreCalculadoTemporal);
+            localStorage.setItem('opti_betesda_cierres_caja', JSON.stringify(cierresCajaDB));
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
+                    
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
+                        <div style="font-size: 11px; font-weight: 900; background: #000; color: #fff; padding: 3px; margin-top: 4px; text-transform: uppercase;">
+                            CORTE Y CIERRE DE CAJA DIARIO
+                        </div>
+                    </div>
+
+                    <div style="font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px; line-height: 1.4;">
+                        <div><strong>FECHA CORTE:</strong> ${cierreCalculadoTemporal.fecha} ${cierreCalculadoTemporal.hora}</div>
+                        <div><strong>RESPONSABLE CAJA:</strong> ${cierreCalculadoTemporal.usuario}</div>
+                    </div>
+
+                    <div style="border: 1.5px solid #000; padding: 6px; border-radius: 3px; font-size: 11px; margin-bottom: 6px; font-family: monospace;">
+                        <div style="font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px;">DESGLOSE DE INGRESOS:</div>
+                        <div style="display: flex; justify-content: space-between;"><span>EFECTIVO:</span> <strong>$${cierreCalculadoTemporal.efectivo.toFixed(2)}</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>TARJETAS:</span> <strong>$${cierreCalculadoTemporal.tarjeta.toFixed(2)}</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>TRANSFERENCIAS:</span> <strong>$${cierreCalculadoTemporal.transferencia.toFixed(2)}</strong></div>
+                        
+                        <div style="display: flex; justify-content: space-between; border-top: 2px solid #000; padding-top: 4px; margin-top: 4px; font-size: 12px; font-weight: 900;">
+                            <span>TOTAL NETO:</span> <span>$${cierreCalculadoTemporal.totalNeto.toFixed(2)}</span>
+                        </div>
+                    </div>
+
+                    <div style="border: 1px dashed #000; padding: 5px; font-size: 10px; margin-bottom: 6px;">
+                        <div><strong>Ventas Emitidas:</strong> ${cierreCalculadoTemporal.countVigentes}</div>
+                        <div><strong>Notas Canceladas:</strong> ${cierreCalculadoTemporal.countCanceladas} ($${cierreCalculadoTemporal.montoCancelado.toFixed(2)})</div>
+                    </div>
+
+                    <div style="text-align: center; font-size: 9px; font-weight: bold; border-top: 1px solid #000; padding-top: 6px; line-height: 1.3; color: #111;">
+                        Comprobante oficial de arqueo de caja.<br>
+                        Óptica Betesda
+                    </div>
+
+                </div>
+            `;
+
+            cerrarModalCierreCaja();
+            setTimeout(() => { window.print(); }, 200);
+            showToast("Cierre de caja registrado e impreso correctamente", "success");
+        }
+
+        /* --- CANCELACIÓN CON INFORMACIÓN COMPLETA Y ARTÍCULOS --- */
+        function abrirModalCancelarNota() {
+            document.getElementById('inputNotaACancelar').value = '';
+            document.getElementById('inputMotivoCancelacion').value = '';
+            document.getElementById('seccionInfoNotaCancelacion').classList.add('hidden');
+            document.getElementById('seccionMotivoCancelacion').classList.add('hidden');
+            document.getElementById('btnConfirmarCancelacionFinal').classList.add('hidden');
+            document.getElementById('modalCancelarNota').classList.remove('hidden');
+        }
+
+        function cerrarModalCancelarNota() {
+            document.getElementById('modalCancelarNota').classList.add('hidden');
+        }
+
+        function consultarNotaParaCancelar() {
+            const notaInput = document.getElementById('inputNotaACancelar').value.trim().toUpperCase();
+            if (!notaInput) {
+                alert("Por favor ingresa el número de nota.");
+                return;
+            }
+
+            const venta = ventasRealizadasDB.find(v => v.nota.toUpperCase() === notaInput);
+            if (!venta) {
+                alert("No se encontró ninguna venta con el número de nota especificado.");
+                document.getElementById('seccionInfoNotaCancelacion').classList.add('hidden');
+                document.getElementById('seccionMotivoCancelacion').classList.add('hidden');
+                document.getElementById('btnConfirmarCancelacionFinal').classList.add('hidden');
+                return;
+            }
+
+            if (venta.cancelada) {
+                alert("Esta nota ya se encuentra cancelada previamente.");
+                return;
+            }
+
+            const hoyStr = new Date().toISOString().split('T')[0];
+            if (venta.fecha !== hoyStr) {
+                alert("Error: Únicamente se pueden cancelar notas emitidas el mismo día.");
+                return;
+            }
+
+            document.getElementById('lblInfoNotaFecha').textContent = `${venta.fecha} - ${venta.hora}`;
+            document.getElementById('lblInfoNotaPaciente').textContent = venta.paciente;
+            document.getElementById('lblInfoNotaTotal').textContent = `$${venta.total.toFixed(2)}`;
+            document.getElementById('lblInfoNotaPago').textContent = venta.metodoPago;
+            document.getElementById('lblInfoNotaEstado').textContent = venta.saldoPendiente > 0 ? 'Con saldo pendiente (Anticipo)' : 'Pagado 100%';
+
+            let artHtml = '';
+            venta.items.forEach((it) => {
+                artHtml += `<div>• ${it.cantidad}x ${it.nombre} ($${it.precio.toFixed(2)})</div>`;
+            });
+            document.getElementById('lblInfoNotaArticulos').innerHTML = artHtml;
+
+            document.getElementById('seccionInfoNotaCancelacion').classList.remove('hidden');
+            document.getElementById('seccionMotivoCancelacion').classList.remove('hidden');
+            document.getElementById('btnConfirmarCancelacionFinal').classList.remove('hidden');
+            showToast("Nota encontrada correctamente", "success");
+        }
+
+        function ejecutarCancelacionNota() {
+            const notaInput = document.getElementById('inputNotaACancelar').value.trim().toUpperCase();
+            const motivo = document.getElementById('inputMotivoCancelacion').value.trim();
+
+            if (!motivo) {
+                alert("Por favor ingresa el motivo de la cancelación.");
+                return;
+            }
+
+            const venta = ventasRealizadasDB.find(v => v.nota.toUpperCase() === notaInput);
+            if (!venta) return;
+
+            venta.cancelada = true;
+            venta.motivoCancelacion = motivo;
+            venta.fechaCancelacion = new Date().toLocaleDateString('es-MX');
+            venta.usuarioCancelacion = currentUser ? currentUser.user : 'Admin';
+
+            venta.items.forEach(item => {
+                if (item.tipo === 'PRODUCTO' && item.rawProducto) {
+                    let prod = item.rawProducto;
+                    let existenciaEncontrada = existenciasDB.find(ex => {
+                        const matchId = prod.id && ex.id && String(ex.id) === String(prod.id);
+                        const matchDatos = (ex.marca || '').toLowerCase() === (prod.marcaNombre || '').toLowerCase() && 
+                                           (ex.modelo || '').toLowerCase() === (prod.modeloNombre || '').toLowerCase();
+                        return (matchId || matchDatos) && ex.lote !== 'VENTA';
+                    });
+
+                    if (existenciaEncontrada) {
+                        existenciaEncontrada.cantidad = (parseInt(existenciaEncontrada.cantidad) || 0) + Math.abs(item.cantidad);
+                    }
+                }
+            });
+
+            localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            localStorage.setItem('opti_betesda_existencias', JSON.stringify(existenciasDB));
+
+            cerrarModalCancelarNota();
+            renderVentasDiarias();
+            generarImpresionTicketCancelacion(venta, motivo);
+            showToast(`Nota ${venta.nota} cancelada correctamente`, "success");
+        }
+
+        function generarImpresionTicketCancelacion(ventaObj, motivo) {
+            const fechaHoraCancelacion = new Date().toLocaleString('es-MX');
+            let itemsHtml = '';
+            ventaObj.items.forEach(it => {
+                itemsHtml += `<div>• ${it.cantidad}x ${it.nombre} - $${it.precio.toFixed(2)}</div>`;
+            });
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
+                    
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
+                        <div style="font-size: 12px; font-weight: 900; background: #000; color: #fff; padding: 3px; margin-top: 4px; text-transform: uppercase;">
+                            COMPROBANTE DE CANCELACIÓN
+                        </div>
+                    </div>
+
+                    <div style="font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px; line-height: 1.4;">
+                        <div><strong>NOTA CANCELADA:</strong> <span style="font-size: 12px; font-weight: 900;">${ventaObj.nota}</span></div>
+                        <div><strong>FECHA VENTA ORIGINAL:</strong> ${ventaObj.fecha} ${ventaObj.hora}</div>
+                        <div><strong>FECHA CANCELACIÓN:</strong> ${fechaHoraCancelacion}</div>
+                        <div><strong>CANCELADO POR:</strong> ${ventaObj.usuarioCancelacion || 'Admin'}</div>
+                        <div><strong>CLIENTE:</strong> ${ventaObj.paciente}</div>
+                        <div><strong>MÉTODO DE PAGO ORIGINAL:</strong> ${ventaObj.metodoPago}</div>
+                        <div><strong>IMPORTE ANULADO:</strong> $${ventaObj.total.toFixed(2)}</div>
+                    </div>
+
+                    <div style="border: 1px solid #000; padding: 5px; font-size: 10px; margin-bottom: 6px;">
+                        <strong>ARTÍCULOS DEVUELTOS A STOCK:</strong>
+                        <div style="margin-top: 3px; line-height: 1.3;">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+
+                    <div style="border: 1.5px solid #000; padding: 6px; border-radius: 3px; font-size: 10.5px; margin-bottom: 6px;">
+                        <strong>MOTIVO DE CANCELACIÓN:</strong><br>
+                        <p style="margin: 3px 0 0 0; font-style: italic;">${motivo}</p>
+                    </div>
+
+                    <div style="text-align: center; font-size: 9px; font-weight: bold; border-top: 1px solid #000; padding-top: 6px; line-height: 1.3; color: #111;">
+                        La nota ha sido anulada en el sistema y el inventario ha sido devuelto.<br>
+                        Óptica Betesda
+                    </div>
+
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 200);
+        }
+
+        function marcarEntregadoDirecto(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) return;
+            venta.estadoTaller = 'Entregado';
+            localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            renderVentasDiarias();
+            showToast(`Nota ${venta.nota} marcada como Entregada`, "success");
+        }
+
+        function reimprimirTicket(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) {
+                showToast("No se encontró la venta para reimprimir", "error");
+                return;
+            }
+            generarImpresionTicket(venta);
+            showToast(`Reimprimiendo ${venta.nota}`, "success");
+        }
+
+        function abrirVistaPreviaOrdenLaboratorio(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) {
+                showToast("No se encontró la venta para generar la orden de laboratorio", "error");
+                return;
+            }
+
+            ventaSeleccionadaLabTemporal = venta;
+            let micasItems = venta.items.filter(item => item.tipo === 'MICA' || item.rx);
+            if (micasItems.length === 0) {
+                showToast("Esta venta no contiene micas registradas para orden de laboratorio", "error");
+                return;
+            }
+
+            let detalleMicasHtml = '';
+            micasItems.forEach((item) => {
+                let rxInfo = item.rx ? `
+                    <div style="margin-top: 6px; border: 1px solid #000; padding: 6px; font-size: 11px; background: #fff;">
+                        <div style="font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 3px; text-transform: uppercase;">GRADUACIÓN (RX) - ${item.rx.tipoArmazon || 'Armazón'}</div>
+                        <div><strong>OD:</strong> ESF:${item.rx.od.esf || '0.00'} | CIL:${item.rx.od.cil || '0.00'} | EJE:${item.rx.od.eje || '-'}° | ADD:${item.rx.od.add || '-'} | D.I:${item.rx.od.di || '-'}</div>
+                        <div><strong>OI:</strong> ESF:${item.rx.oi.esf || '0.00'} | CIL:${item.rx.oi.cil || '0.00'} | EJE:${item.rx.oi.eje || '-'}° | ADD:${item.rx.oi.add || '-'} | D.I:${item.rx.oi.di || '-'}</div>
+                    </div>
+                ` : `<div style="font-style: italic; font-size: 11px; margin-top: 4px;">Sin graduación específica registrada.</div>`;
+
+                detalleMicasHtml += `
+                    <div style="margin-bottom: 8px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 6px;">
+                        <div><strong>Concepto:</strong> <span class="font-bold text-betesda-green">${item.nombre}</span></div>
+                        <div><strong>Cantidad:</strong> ${item.cantidad}</div>
+                        ${rxInfo}
+                    </div>
+                `;
+            });
+
+            const htmlVista = `
+                <div style="text-align: center; border-bottom: 2px solid #006837; padding-bottom: 6px; margin-bottom: 6px;">
+                    <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900; color: #006837;">ÓPTICA BETESDA</h2>
+                    <h3 style="margin: 4px 0 0 0; font-size: 11px; font-weight: 900; background: #006837; color: #fff; padding: 2px; text-transform: uppercase;">ORDEN DE LABORATORIO</h3>
+                    <p style="margin: 3px 0 0 0; font-size: 12px; font-weight: 900;">${venta.nota}</p>
+                </div>
+                <div style="font-size: 11px; line-height: 1.4; margin-bottom: 6px; border-bottom: 1px solid #cbd5e1; padding-bottom: 6px;">
+                    <div><strong>Fecha de Venta:</strong> ${venta.fecha} ${venta.hora}</div>
+                    <div><strong>Fecha de Entrega:</strong> <span style="font-weight: 900; color: #006837;">${venta.fechaEntrega || 'Por definir'}</span></div>
+                    <div><strong>Paciente:</strong> <span style="font-weight: 900;">${venta.paciente}</span></div>
+                    <div><strong>Teléfono:</strong> ${venta.telefono || 'N/A'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: #1a251e;">Detalle de Micas y Dioptrías:</div>
+                    ${detalleMicasHtml}
+                </div>
+            `;
+
+            document.getElementById('contenidoVistaPreviaOrdenLab').innerHTML = htmlVista;
+            const btnImprimirModal = document.getElementById('btnImprimirDesdeModalLab');
+            btnImprimirModal.onclick = () => ejecutarImpresionOrdenLaboratorio(ventaSeleccionadaLabTemporal);
+
+            cerrarModalDetalleVenta();
+            document.getElementById('modalVistaPreviaOrdenLab').classList.remove('hidden');
+        }
+
+        function cerrarModalVistaPreviaOrdenLab() {
+            document.getElementById('modalVistaPreviaOrdenLab').classList.add('hidden');
+            ventaSeleccionadaLabTemporal = null;
+        }
+
+        function ejecutarImpresionOrdenLaboratorio(venta) {
+            if (!venta) return;
+            let micasItems = venta.items.filter(item => item.tipo === 'MICA' || item.rx);
+            if (micasItems.length === 0) return;
+
+            let detalleMicasHtml = '';
+            micasItems.forEach((item) => {
+                let rxInfo = item.rx ? `
+                    <div style="margin-top: 6px; border: 1px solid #000; padding: 5px; font-size: 11px; font-family: monospace;">
+                        <div style="font-weight: 900; border-bottom: 1px solid #000; margin-bottom: 3px; text-transform: uppercase;">GRADUACIÓN (RX) - ${item.rx.tipoArmazon || 'Armazón'}</div>
+                        <div><strong>OD:</strong> ESF:${item.rx.od.esf || '0.00'} | CIL:${item.rx.od.cil || '0.00'} | EJE:${item.rx.od.eje || '-'}° | ADD:${item.rx.od.add || '-'} | D.I:${item.rx.od.di || '-'}</div>
+                        <div><strong>OI:</strong> ESF:${item.rx.oi.esf || '0.00'} | CIL:${item.rx.oi.cil || '0.00'} | EJE:${item.rx.oi.eje || '-'}° | ADD:${item.rx.oi.add || '-'} | D.I:${item.rx.oi.di || '-'}</div>
+                    </div>
+                ` : `<div style="font-style: italic; font-size: 11px; margin-top: 4px;">Sin graduación específica registrada.</div>`;
+
+                detalleMicasHtml += `
+                    <div style="margin-bottom: 8px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+                        <div><strong>Concepto:</strong> <span style="font-size: 13px; font-weight: 900;">${item.nombre}</span></div>
+                        <div><strong>Cantidad:</strong> ${item.cantidad}</div>
+                        ${rxInfo}
+                    </div>
+                `;
+            });
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: sans-serif; font-size: 12px; font-weight: bold; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3;">
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 120px; max-height: 75px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 15px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
+                        <h3 style="margin: 4px 0 0 0; font-size: 12px; font-weight: 900; background: #000; color: #fff; padding: 2px; text-transform: uppercase;">ORDEN DE LABORATORIO</h3>
+                        <p style="margin: 3px 0 0 0; font-size: 13px; font-weight: 900;">${venta.nota}</p>
+                    </div>
+
+                    <div style="font-size: 12px; line-height: 1.4; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px;">
+                        <div><strong>Fecha de Venta:</strong> ${venta.fecha} ${venta.hora}</div>
+                        <div><strong>Fecha de Entrega:</strong> <span style="font-size: 13px; font-weight: 900; text-decoration: underline;">${venta.fechaEntrega || 'Por definir'}</span></div>
+                        <div><strong>Paciente:</strong> <span style="font-size: 13px; font-weight: 900;">${venta.paciente}</span></div>
+                        <div><strong>Teléfono:</strong> ${venta.telefono || 'N/A'}</div>
+                    </div>
+
+                    <div style="margin-bottom: 6px;">
+                        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase; border-bottom: 1px solid #000; margin-bottom: 4px;">Detalle de Micas y Dioptrías:</div>
+                        ${detalleMicasHtml}
+                    </div>
+
+                    <div style="border-top: 1px solid #000; padding-top: 6px; margin-top: 8px; text-align: center; font-size: 11px;">
+                        <div>Observaciones / Taller:</div>
+                        <div style="border: 1px solid #000; height: 35px; margin-top: 3px;"></div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 10px; font-size: 11px; font-weight: bold; border-top: 1px dashed #000; padding-top: 4px;">
+                        Óptica Betesda - Control de Laboratorio
+                    </div>
+                </div>
+            `;
+
+            cerrarModalVistaPreviaOrdenLab();
+            setTimeout(() => { window.print(); }, 200);
+            showToast(`Imprimiendo Orden de Laboratorio para ${venta.nota}`, "success");
+        }
+
+        function abrirModalAbonar(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) return;
+
+            ventaAbonandoTemporal = venta;
+            let totalAbonado = 0;
+            if (venta.historialAbonos) {
+                venta.historialAbonos.forEach(a => totalAbonado += a.monto);
+            } else {
+                totalAbonado = venta.montoCobradoAhora || venta.total;
+            }
+
+            document.getElementById('abonoNotaFolio').textContent = venta.nota;
+            document.getElementById('abonoPacienteNombre').textContent = venta.paciente;
+            document.getElementById('abonoTotalVenta').textContent = `$${venta.total.toFixed(2)}`;
+            document.getElementById('abonoAcumulado').textContent = `$${totalAbonado.toFixed(2)}`;
+            document.getElementById('abonoSaldoPendiente').textContent = `$${venta.saldoPendiente.toFixed(2)}`;
+
+            document.getElementById('inputMontoNuevoAbono').value = '';
+            document.getElementById('lblNuevoSaldoRestante').textContent = `$${venta.saldoPendiente.toFixed(2)}`;
+            document.getElementById('selectMetodoPagoAbono').value = 'Efectivo';
+            document.getElementById('inputEfectivoAbono').value = '';
+            document.getElementById('lblCambioAbono').textContent = '$0.00';
+
+            cerrarModalDetalleVenta();
+            document.getElementById('modalNuevoAbono').classList.remove('hidden');
+        }
+
+        function cerrarModalNuevoAbono() {
+            document.getElementById('modalNuevoAbono').classList.add('hidden');
+            ventaAbonandoTemporal = null;
+        }
+
+        function liquidarTotalAbono() {
+            if (!ventaAbonandoTemporal) return;
+            document.getElementById('inputMontoNuevoAbono').value = ventaAbonandoTemporal.saldoPendiente.toFixed(2);
+            calcularNuevoSaldoRestante();
+        }
+
+        function calcularNuevoSaldoRestante() {
+            if (!ventaAbonandoTemporal) return;
+            const abonar = parseFloat(document.getElementById('inputMontoNuevoAbono').value) || 0;
+            const restante = Math.max(0, ventaAbonandoTemporal.saldoPendiente - abonar);
+            const lbl = document.getElementById('lblNuevoSaldoRestante');
+
+            if (restante <= 0.01) {
+                lbl.textContent = '$0.00 (Liquidado)';
+                lbl.classList.remove('text-rose-600');
+                lbl.classList.add('text-betesda-green');
+            } else {
+                lbl.textContent = `$${restante.toFixed(2)}`;
+                lbl.classList.remove('text-betesda-green');
+                lbl.classList.add('text-rose-600');
+            }
+
+            if (document.getElementById('selectMetodoPagoAbono').value === 'Efectivo') {
+                document.getElementById('inputEfectivoAbono').value = abonar.toFixed(2);
+                calcularCambioAbono();
+            }
+        }
+
+        function cambiarMetodoPagoAbono() {
+            const metodo = document.getElementById('selectMetodoPagoAbono').value;
+            const seccion = document.getElementById('seccionEfectivoAbono');
+            if (metodo === 'Efectivo') {
+                seccion.classList.remove('hidden');
+            } else {
+                seccion.classList.add('hidden');
+            }
+        }
+
+        function calcularCambioAbono() {
+            const abonar = parseFloat(document.getElementById('inputMontoNuevoAbono').value) || 0;
+            const recibido = parseFloat(document.getElementById('inputEfectivoAbono').value) || 0;
+            const cambio = recibido - abonar;
+            const lbl = document.getElementById('lblCambioAbono');
+
+            if (cambio >= 0) {
+                lbl.textContent = `$${cambio.toFixed(2)}`;
+                lbl.classList.remove('text-rose-600');
+                lbl.classList.add('text-betesda-green');
+            } else {
+                lbl.textContent = `Faltan $${Math.abs(cambio).toFixed(2)}`;
+                lbl.classList.remove('text-betesda-green');
+                lbl.classList.add('text-rose-600');
+            }
+        }
+
+        function guardarAbonoRealizado() {
+            if (!ventaAbonandoTemporal) return;
+
+            const abonar = parseFloat(document.getElementById('inputMontoNuevoAbono').value) || 0;
+            if (abonar <= 0) {
+                alert("Ingresa un monto de abono válido mayor a 0.");
+                return;
+            }
+
+            const abonoCents = Math.round(abonar * 100);
+            const pendienteCents = Math.round(ventaAbonandoTemporal.saldoPendiente * 100);
+
+            if (abonoCents > pendienteCents) {
+                alert("El abono no puede ser mayor al saldo pendiente actual.");
+                return;
+            }
+
+            const metodo = document.getElementById('selectMetodoPagoAbono').value;
+            if (metodo === 'Efectivo') {
+                const recibido = parseFloat(document.getElementById('inputEfectivoAbono').value) || 0;
+                if (Math.round(recibido * 100) < abonoCents) {
+                    alert("El efectivo recibido es menor al abono ingresado.");
+                    return;
+                }
+            }
+
+            const fechaStr = new Date().toISOString().split('T')[0];
+            const horaStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+            ventaAbonandoTemporal.montoCobradoAhora = (ventaAbonandoTemporal.montoCobradoAhora || 0) + abonar;
+            
+            if (Math.abs(pendienteCents - abonoCents) <= 1) {
+                ventaAbonandoTemporal.saldoPendiente = 0;
+            } else {
+                ventaAbonandoTemporal.saldoPendiente = Math.max(0, ventaAbonandoTemporal.saldoPendiente - abonar);
+            }
+
+            if (!ventaAbonandoTemporal.historialAbonos) {
+                ventaAbonandoTemporal.historialAbonos = [];
+            }
+
+            ventaAbonandoTemporal.historialAbonos.push({
+                fecha: fechaStr,
+                hora: horaStr,
+                monto: abonar,
+                metodo: metodo,
+                notaAbono: 'Abono posterior'
+            });
+
+            localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            generarImpresionComprobanteAbono(ventaAbonandoTemporal, abonar, metodo, fechaStr, horaStr);
+            cerrarModalNuevoAbono();
+            renderVentasDiarias();
+            showToast("Abono registrado correctamente", "success");
+        }
+
+        function generarImpresionComprobanteAbono(ventaObj, abonar, metodo, fechaAbono, horaAbono) {
+            let totalAbonado = 0;
+            ventaObj.historialAbonos.forEach(a => totalAbonado += a.monto);
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: sans-serif; font-size: 13px; font-weight: bold; color: #000; width: 100%; box-sizing: border-box; line-height: 1.4;">
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 130px; max-height: 85px; object-fit: contain; margin: 0 auto 6px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 16px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
+                        <h3 style="margin: 6px 0 0 0; font-size: 14px; font-weight: 900;">COMPROBANTE DE ABONO</h3>
+                        <p style="margin: 3px 0 0 0; font-size: 14px; font-weight: 900;">${ventaObj.nota}</p>
+                    </div>
+
+                    <div style="font-size: 13px; line-height: 1.5; margin-bottom: 8px; border-bottom: 1px solid #000; padding-bottom: 6px;">
+                        <div><strong>Fecha Abono:</strong> ${fechaAbono} ${horaAbono}</div>
+                        <div><strong>Cliente:</strong> ${ventaObj.paciente}</div>
+                        <div><strong>Vendedor:</strong> ${ventaObj.vendedor || 'Admin'}</div>
+                    </div>
+
+                    <div style="border: 2px solid #000; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-family: monospace; font-size: 13px;">
+                        <div style="margin-bottom: 4px; overflow: hidden;"><span style="float: left;">Total de la Venta:</span> <strong style="float: right;">$${ventaObj.total.toFixed(2)}</strong></div>
+                        <div style="border-top: 1px dashed #000; padding-top: 4px; overflow: hidden;"><span style="float: left;">ABONO HOY (${metodo}):</span> <strong style="float: right;">$${abonar.toFixed(2)}</strong></div>
+                        <div style="margin-top: 4px; overflow: hidden;"><span style="float: left;">Total Abonado:</span> <strong style="float: right;">$${totalAbonado.toFixed(2)}</strong></div>
+                        <div style="border-top: 2px solid #000; padding-top: 4px; margin-top: 4px; font-size: 14px; overflow: hidden;"><span style="float: left;">SALDO PENDIENTE:</span> <strong style="float: right;">$${ventaObj.saldoPendiente.toFixed(2)}</strong></div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 12px; font-size: 12px; font-weight: bold; border-top: 1px dashed #000; padding-top: 6px;">
+                        ¡Gracias por su preferencia!<br>Conserve este comprobante.
+                    </div>
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 200);
+        }
+
+        function verDetalleVenta(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta) return;
+
+            let itemsHtml = '';
+            let subtotal = 0;
+
+            venta.items.forEach((item, idx) => {
+                let descPct = item.descuentoPorcentaje || 0;
+                let unitFinal = item.precio * (1 - descPct / 100);
+                let sub = unitFinal * item.cantidad;
+                subtotal += sub;
+
+                let descInfoHtml = descPct > 0 ? `<span class="text-rose-600 font-bold ml-1">(-${descPct}%)</span>` : '';
+
+                itemsHtml += `
+                    <div class="p-3 bg-slate-50 border border-betesda-lightgreen rounded-xl space-y-1">
+                        <div class="flex justify-between items-center font-bold text-betesda-darkgreen">
+                            <span>${idx + 1}. ${item.nombre} ${descInfoHtml}</span>
+                            <span class="font-mono text-betesda-green">$${sub.toFixed(2)} <span class="text-slate-400 text-[10px]">(${item.cantidad} x $${unitFinal.toFixed(2)})</span></span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            let iva = subtotal * 0.16;
+            let total = subtotal + iva;
+            let totalAbonado = 0;
+            if (venta.historialAbonos) {
+                venta.historialAbonos.forEach(a => totalAbonado += a.monto);
+            } else {
+                totalAbonado = venta.montoCobradoAhora || total;
+            }
+            let saldo = venta.saldoPendiente || 0;
+            let estadoActual = venta.estadoTaller || (venta.items.some(item => item.tipo === 'MICA' || item.rx) ? 'En Taller' : 'Entregado');
+            
+            let estadoBadgeHtml = '';
+            if (venta.cancelada) {
+                estadoBadgeHtml = `<span class="bg-rose-100 text-rose-800 px-2 py-0.5 rounded font-bold border border-rose-300">CANCELADA</span>`;
+            } else if (estadoActual === 'En Taller') {
+                estadoBadgeHtml = `<span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-bold border border-amber-300">En Taller</span>`;
+            } else if (estadoActual === 'En Espera') {
+                estadoBadgeHtml = `<span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-bold border border-blue-300">En Espera</span>`;
+            } else {
+                estadoBadgeHtml = `<span class="bg-emerald-100 text-betesda-green px-2 py-0.5 rounded font-bold border border-emerald-300">Entregado</span>`;
+            }
+
+            let abonosHistorialHtml = '';
+            if (venta.historialAbonos && venta.historialAbonos.length > 0) {
+                venta.historialAbonos.forEach((a, i) => {
+                    abonosHistorialHtml += `
+                        <div class="flex justify-between items-center text-[10px] bg-white p-1.5 rounded border border-slate-200 font-mono">
+                            <span>#${i+1} - ${a.fecha} ${a.hora} (${a.metodo})</span>
+                            <span class="font-bold text-betesda-green">$${a.monto.toFixed(2)}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            const html = `
+                <div class="bg-betesda-softgreen p-3.5 rounded-xl border border-betesda-lightgreen space-y-1.5 text-xs">
+                    <div class="flex justify-between font-bold text-betesda-darkgreen">
+                        <span class="text-sm text-betesda-green"><i class="fa-solid fa-receipt"></i> ${venta.nota}</span>
+                        <span class="text-slate-500">${venta.fecha} - ${venta.hora}</span>
+                    </div>
+                    <div><strong>Paciente:</strong> ${venta.paciente} (Edad: ${venta.edad || 'N/A'})</div>
+                    <div><strong>Teléfono:</strong> ${venta.telefono || 'N/A'} | <strong>Vendedor:</strong> <span class="text-betesda-green font-bold">${venta.vendedor || 'Admin'}</span></div>
+                    <div class="pt-1 border-t border-betesda-lightgreen flex flex-wrap gap-3 items-center">
+                        <div><strong>Promesa de Entrega:</strong> <span class="font-bold text-betesda-darkgreen">${venta.fechaEntrega || 'No programada'}</span></div>
+                        <div><strong>Estado:</strong> ${estadoBadgeHtml}</div>
+                        <div><strong>Método de Pago:</strong> <span class="bg-white px-2 py-0.5 rounded border border-betesda-lightgreen font-bold text-betesda-green">${venta.metodoPago}</span></div>
+                    </div>
+                    ${venta.cancelada ? `<div class="text-rose-600 font-bold pt-1">Motivo de Cancelación: ${venta.motivoCancelacion}</div>` : ''}
+                </div>
+
+                <div class="space-y-2 pt-1">
+                    <div class="font-bold text-betesda-green uppercase text-[11px]"><i class="fa-solid fa-boxes-stacked"></i> Conceptos Registrados:</div>
+                    <div class="max-h-40 overflow-y-auto space-y-2">${itemsHtml}</div>
+                </div>
+
+                <div class="space-y-1.5 pt-1">
+                    <div class="font-bold text-betesda-darkgreen uppercase text-[11px]"><i class="fa-solid fa-clock-rotate-left"></i> Historial de Pagos / Abonos:</div>
+                    <div class="space-y-1 max-h-28 overflow-y-auto">${abonosHistorialHtml}</div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 font-mono text-xs space-y-1">
+                    <div class="flex justify-between"><span>Total de la Venta:</span> <span class="font-bold">$${total.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-betesda-green font-bold"><span>Total Abonado a la Fecha:</span> <span>$${totalAbonado.toFixed(2)}</span></div>
+                    <div class="flex justify-between text-rose-600 font-extrabold pt-1 border-t border-slate-200"><span>Saldo Pendiente:</span> <span>$${saldo.toFixed(2)}</span></div>
+                </div>
+            `;
+
+            document.getElementById('contenidoDetalleVenta').innerHTML = html;
+            
+            const btnReimprimirDetalle = document.getElementById('btnReimprimirDesdeDetalle');
+            btnReimprimirDetalle.onclick = () => reimprimirTicket(venta.nota);
+
+            const btnMarcarEntregado = document.getElementById('btnMarcarEntregadoDesdeDetalle');
+            if (!venta.cancelada && estadoActual !== 'Entregado') {
+                btnMarcarEntregado.classList.remove('hidden');
+                btnMarcarEntregado.onclick = () => {
+                    marcarEntregadoDirecto(venta.nota);
+                    cerrarModalDetalleVenta();
+                };
+            } else {
+                btnMarcarEntregado.classList.add('hidden');
+            }
+
+            const btnOrdenLabDetalle = document.getElementById('btnOrdenLabDesdeDetalle');
+            let tieneMica = venta.items.some(item => item.tipo === 'MICA' || item.rx);
+            if (!venta.cancelada && tieneMica) {
+                btnOrdenLabDetalle.classList.remove('hidden');
+                btnOrdenLabDetalle.onclick = () => abrirVistaPreviaOrdenLaboratorio(venta.nota);
+            } else {
+                btnOrdenLabDetalle.classList.add('hidden');
+            }
+
+            const btnAbonarDetalle = document.getElementById('btnAbonarDesdeDetalle');
+            if (!venta.cancelada && saldo > 0) {
+                btnAbonarDetalle.classList.remove('hidden');
+                btnAbonarDetalle.onclick = () => abrirModalAbonar(venta.nota);
+            } else {
+                btnAbonarDetalle.classList.add('hidden');
+            }
+
+            document.getElementById('modalDetalleVenta').classList.remove('hidden');
+        }
+
+        function cerrarModalDetalleVenta() {
+            document.getElementById('modalDetalleVenta').classList.add('hidden');
+        }
+
+        function generarImpresionTicket(ventaObj) {
+            let rowsHtml = '';
+            let subtotalCalculado = 0;
+
+            ventaObj.items.forEach((item) => {
+                let descPct = item.descuentoPorcentaje || 0;
+                let unitFinal = item.precio * (1 - descPct / 100);
+                const sub = unitFinal * item.cantidad;
+                subtotalCalculado += sub;
+
+                let descTicketInfo = descPct > 0 ? `<br><span style="font-size: 9px; font-weight: normal; color: #444;">Descuento: ${descPct}% (Orig: $${item.precio.toFixed(2)})</span>` : '';
+
+                rowsHtml += `
+                    <tr>
+                        <td style="padding: 5px 2px; border-bottom: 1px solid #000; text-align: center; vertical-align: top; font-weight: bold; font-size: 11px;">${item.cantidad}</td>
+                        <td style="padding: 5px 2px; border-bottom: 1px solid #000; vertical-align: top; font-weight: bold; font-size: 11px;">
+                            ${item.nombre}
+                            ${descTicketInfo}
+                        </td>
+                        <td style="padding: 5px 2px; border-bottom: 1px solid #000; text-align: right; vertical-align: top; font-weight: bold; font-size: 11px;">$${unitFinal.toFixed(2)}</td>
+                        <td style="padding: 5px 2px; border-bottom: 1px solid #000; text-align: right; vertical-align: top; font-weight: 900; font-size: 11px;">$${sub.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            const ivaCalculado = subtotalCalculado * 0.16;
+            const totalCalculado = subtotalCalculado + ivaCalculado;
+
+            let totalAbonado = 0;
+            if (ventaObj.historialAbonos) {
+                ventaObj.historialAbonos.forEach(a => totalAbonado += a.monto);
+            } else {
+                totalAbonado = ventaObj.montoCobradoAhora || totalCalculado;
+            }
+
+            function numeroALetras(cantidad) {
+                return "SON: " + cantidad.toFixed(2) + " PESOS M/N";
+            }
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
+                    
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">OPTICA BETESDA</h2>
+                        <div style="font-size: 9.5px; font-weight: bold; margin-top: 2px;">R.F.C: MES050408U40</div>
+                        <div style="font-size: 9px; margin-top: 1px; line-height: 1.2;">
+                            DOM. FIS. PENSAMIENTOS 201<br>
+                            COL REFORMA OAXACA DE JUAREZ CP.68050<br>
+                            TEL. 9515010993
+                        </div>
+                        <div style="font-size: 9px; font-weight: bold; margin-top: 3px; border-top: 1px dotted #666; padding-top: 3px;">
+                            L-V 8:00 AM - 8:00 PM | S 8:00 AM - 2:00 PM
+                        </div>
+                    </div>
+
+                    <div style="font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px; line-height: 1.3;">
+                        <div><strong>NOTA:</strong> <span style="font-size: 12px; font-weight: 900;">${ventaObj.nota}</span></div>
+                        <div><strong>FECHA DE EMISION:</strong> ${ventaObj.fecha} ${ventaObj.hora}</div>
+                        <div><strong>VENDEDOR:</strong> ${ventaObj.vendedor || 'Admin'}</div>
+                        <div style="margin-top: 3px; border-top: 1px dashed #666; padding-top: 3px;">
+                            <strong>DATOS DEL CLIENTE:</strong><br>
+                            <span>Nombre: ${ventaObj.paciente}</span><br>
+                            <span>Teléfono: ${ventaObj.telefono || 'N/A'}</span><br>
+                            <span>Fecha Entrega Promesa: <strong>${ventaObj.fechaEntrega || 'No Aplica'}</strong></span>
+                        </div>
+                    </div>
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px;">
+                        <thead>
+                            <tr style="background-color: #000; color: white; font-size: 9.5px; text-transform: uppercase;">
+                                <th style="padding: 3px 2px; text-align: center; width: 18px;">Cant.</th>
+                                <th style="padding: 3px 2px; text-align: left;">Producto / Serv.</th>
+                                <th style="padding: 3px 2px; text-align: right; width: 42px;">P.U.</th>
+                                <th style="padding: 3px 2px; text-align: right; width: 48px;">IMP.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="border: 1.5px solid #000; padding: 5px; border-radius: 3px; font-size: 10.5px; margin-bottom: 6px; font-family: monospace;">
+                        <div style="display: flex; justify-content: space-between;"><span>SUBTOTAL:</span> <span>$${subtotalCalculado.toFixed(2)}</span></div>
+                        <div style="display: flex; justify-content: space-between;"><span>IVA (16%):</span> <span>$${ivaCalculado.toFixed(2)}</span></div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 2px; font-weight: bold; font-size: 11px;">
+                            <span>TOTAL:</span> <span>$${totalCalculado.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #666; padding-top: 2px; margin-top: 2px;">
+                            <span>TOTAL ABONADO:</span> <span>$${totalAbonado.toFixed(2)}</span>
+                        </div>
+                        <div style="font-size: 9.5px; font-style: italic; margin: 3px 0; text-align: center; border-top: 1px dotted #ccc; border-bottom: 1px dotted #ccc; padding: 2px 0;">
+                            (${numeroALetras(totalCalculado)})
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 11.5px;">
+                            <span>SALDO PENDIENTE:</span> <span>$${ventaObj.saldoPendiente.toFixed(2)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 2px; margin-top: 2px; font-size: 10px;">
+                            <span>FORMA DE PAGO:</span> <strong>${ventaObj.metodoPago}</strong>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; font-size: 8.5px; font-weight: bold; border-top: 1px solid #000; padding-top: 4px; line-height: 1.2; color: #111;">
+                        No es un comprobante fiscal.<br>
+                        Todo trabajo requiere de un 50% de anticipo.<br>
+                        Después de 30 días hábiles no se hacen devoluciones.<br>
+                        No hay garantía en armazones de regalo.
+                    </div>
+
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 200);
+        }
+
+        function showToast(msg, type="success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+    </script>
+</body>
+</html>
