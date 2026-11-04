@@ -317,6 +317,34 @@
         </div>
     </div>
 
+    <!-- MODAL CONFIRMAR ENTREGA -->
+    <div id="modalConfirmarEntrega" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-md space-y-4">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-check-double text-betesda-yellow"></i> Confirmar Entrega de Trabajo
+                </h3>
+                <button onclick="cerrarModalConfirmarEntrega()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="bg-betesda-softgreen p-3.5 rounded-2xl border border-betesda-lightgreen space-y-2 text-xs">
+                <div><strong>Nota:</strong> <span id="lblEntregaNota" class="font-mono font-bold text-betesda-green">NOTA-000</span></div>
+                <div><strong>Paciente:</strong> <span id="lblEntregaPaciente" class="font-bold text-betesda-darkgreen">Paciente</span></div>
+                <div class="text-emerald-700 font-bold bg-emerald-50 p-2 rounded border border-emerald-200">
+                    <i class="fa-solid fa-circle-check"></i> Esta venta está liquidada al 100%.
+                </div>
+                <p class="text-slate-600 pt-1">¿Deseas confirmar la entrega del trabajo y generar el ticket con el formato de conformidad y firma del cliente?</p>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="cerrarModalConfirmarEntrega()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cancelar</button>
+                <button type="button" onclick="ejecutarEntregaConfirmadaModal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-print text-betesda-yellow"></i> Confirmar e Imprimir Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL CIERRE DE CAJA -->
     <div id="modalCierreCaja" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
@@ -375,7 +403,7 @@
         </div>
     </div>
 
-    <!-- MODAL DIOPTRIAS -->
+    <!-- MODAL DIOPTRÍAS -->
     <div id="modalDioptrias" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-2xl space-y-4">
             <h3 class="text-base font-bold text-betesda-green uppercase flex items-center gap-2">
@@ -714,6 +742,7 @@
         let ventaAbonandoTemporal = null;
         let ventaSeleccionadaLabTemporal = null;
         let cierreCalculadoTemporal = null;
+        let notaEntregandoTemporal = null;
 
         window.onload = function() {
             checkSession();
@@ -1649,9 +1678,14 @@
                     badgeTaller = `<span class="block mt-1 text-[9px] bg-emerald-100 text-betesda-green font-extrabold px-1.5 py-0.5 rounded border border-emerald-300 text-center">Entregado</span>`;
                 }
 
-                let btnMarcarEntregadoRow = (!v.cancelada && estadoTallerVal !== 'Entregado')
-                    ? `<button onclick="marcarEntregadoDirecto('${v.nota}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Marcar como Entregado"><i class="fa-solid fa-check-double"></i></button>`
-                    : '';
+                let btnMarcarEntregadoRow = '';
+                if (!v.cancelada && estadoTallerVal !== 'Entregado') {
+                    if (v.saldoPendiente > 0) {
+                        btnMarcarEntregadoRow = `<button onclick="showToast('No se puede entregar: La venta tiene saldo pendiente de $${v.saldoPendiente.toFixed(2)}', 'error')" class="bg-slate-300 text-slate-500 px-2 py-1.5 rounded-lg text-xs cursor-not-allowed" title="Requiere pago completo"><i class="fa-solid fa-lock"></i></button>`;
+                    } else {
+                        btnMarcarEntregadoRow = `<button onclick="marcarEntregadoDirecto('${v.nota}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Marcar como Entregado"><i class="fa-solid fa-check-double"></i></button>`;
+                    }
+                }
 
                 let btnAbonar = (!v.cancelada && v.saldoPendiente > 0)
                     ? `<button onclick="abrirModalAbonar('${v.nota}')" class="bg-betesda-gold hover:bg-amber-600 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Registrar Abono"><i class="fa-solid fa-hand-holding-dollar"></i></button>`
@@ -1969,13 +2003,96 @@
             setTimeout(() => { window.print(); }, 200);
         }
 
+        /* --- MARCAR COMO ENTREGADO CON MODAL FLOTANTE Y VALIDACIÓN DE SALDO --- */
         function marcarEntregadoDirecto(notaId) {
             const venta = ventasRealizadasDB.find(v => v.nota === notaId);
             if (!venta) return;
-            venta.estadoTaller = 'Entregado';
+
+            if (venta.saldoPendiente > 0) {
+                showToast(`No se puede entregar: La venta tiene un saldo pendiente de $${venta.saldoPendiente.toFixed(2)}. Debe liquidarse primero.`, "error");
+                return;
+            }
+
+            notaEntregandoTemporal = venta;
+            document.getElementById('lblEntregaNota').textContent = venta.nota;
+            document.getElementById('lblEntregaPaciente').textContent = venta.paciente;
+            document.getElementById('modalConfirmarEntrega').classList.remove('hidden');
+        }
+
+        function cerrarModalConfirmarEntrega() {
+            document.getElementById('modalConfirmarEntrega').classList.add('hidden');
+            notaEntregandoTemporal = null;
+        }
+
+        function ejecutarEntregaConfirmadaModal() {
+            if (!notaEntregandoTemporal) return;
+
+            notaEntregandoTemporal.estadoTaller = 'Entregado';
             localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventasRealizadasDB));
+            
+            const venta = notaEntregandoTemporal;
+            cerrarModalConfirmarEntrega();
             renderVentasDiarias();
             showToast(`Nota ${venta.nota} marcada como Entregada`, "success");
+
+            imprimirTicketConformidadEntrega(venta);
+        }
+
+        function imprimirTicketConformidadEntrega(venta) {
+            let itemsHtml = '';
+            venta.items.forEach((item) => {
+                itemsHtml += `
+                    <div style="margin-bottom: 3px;">
+                        <strong>• ${item.cantidad}x</strong> ${item.nombre}
+                    </div>`;
+            });
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
+                    
+                    <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+                        <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
+                        <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
+                        <div style="font-size: 10px; font-weight: 900; background: #000; color: #fff; padding: 3px; margin-top: 4px; text-transform: uppercase;">
+                            COMPROBANTE DE ENTREGA Y CONFORMIDAD
+                        </div>
+                    </div>
+
+                    <div style="font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 6px; line-height: 1.4;">
+                        <div><strong>NOTA DE VENTA:</strong> <span style="font-size: 12px; font-weight: 900;">${venta.nota}</span></div>
+                        <div><strong>FECHA ENTREGA:</strong> ${new Date().toLocaleDateString('es-MX')} ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div><strong>PACIENTE:</strong> <span style="font-weight: 900;">${venta.paciente}</span></div>
+                        <div><strong>TELÉFONO:</strong> ${venta.telefono || 'N/A'}</div>
+                        <div><strong>ENTREGADO POR:</strong> ${currentUser ? currentUser.user : 'Admin'}</div>
+                    </div>
+
+                    <div style="border: 1px solid #000; padding: 5px; font-size: 10px; margin-bottom: 6px;">
+                        <strong>TRABAJO / PRODUCTOS ENTREGADOS:</strong>
+                        <div style="margin-top: 4px; line-height: 1.3;">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+
+                    <div style="font-size: 9px; text-align: justify; margin-bottom: 12px; line-height: 1.25; border: 1px dashed #666; padding: 4px;">
+                        Por medio de la presente hago constar que recibo a mi entera satisfacción y conformidad el trabajo óptico / productos arriba descritos, comprobando la graduación, nitidez y estado físico del armazón.
+                    </div>
+
+                    <div style="margin-top: 30px; text-align: center; font-size: 10px;">
+                        <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto 4px auto;"></div>
+                        <strong>FIRMA DE RECIBIDO Y CONFORMIDAD</strong><br>
+                        <span style="font-size: 9px; font-weight: normal;">${venta.paciente}</span>
+                    </div>
+
+                    <div style="text-align: center; font-size: 8.5px; font-weight: bold; border-top: 1px solid #000; margin-top: 15px; padding-top: 4px; line-height: 1.2;">
+                        ¡Gracias por su confianza y preferencia!<br>
+                        Óptica Betesda
+                    </div>
+
+                </div>
+            `;
+
+            setTimeout(() => { window.print(); }, 200);
         }
 
         function reimprimirTicket(notaId) {
@@ -2392,11 +2509,20 @@
 
             const btnMarcarEntregado = document.getElementById('btnMarcarEntregadoDesdeDetalle');
             if (!venta.cancelada && estadoActual !== 'Entregado') {
-                btnMarcarEntregado.classList.remove('hidden');
-                btnMarcarEntregado.onclick = () => {
-                    marcarEntregadoDirecto(venta.nota);
-                    cerrarModalDetalleVenta();
-                };
+                if (saldo > 0) {
+                    btnMarcarEntregado.classList.remove('hidden');
+                    btnMarcarEntregado.className = "bg-slate-300 text-slate-500 font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 cursor-not-allowed";
+                    btnMarcarEntregado.innerHTML = `<i class="fa-solid fa-lock"></i> Requiere Liquidación ($${saldo.toFixed(2)})`;
+                    btnMarcarEntregado.onclick = () => showToast(`No se puede entregar: Faltan $${saldo.toFixed(2)} por liquidar.`, "error");
+                } else {
+                    btnMarcarEntregado.classList.remove('hidden');
+                    btnMarcarEntregado.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5";
+                    btnMarcarEntregado.innerHTML = `<i class="fa-solid fa-check-double"></i> Marcar como Entregado`;
+                    btnMarcarEntregado.onclick = () => {
+                        marcarEntregadoDirecto(venta.nota);
+                        cerrarModalDetalleVenta();
+                    };
+                }
             } else {
                 btnMarcarEntregado.classList.add('hidden');
             }
