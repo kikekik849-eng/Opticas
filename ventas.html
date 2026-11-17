@@ -28,21 +28,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        
+        /* 1. Estilos exclusivos para tickets térmicos (80mm) */
         @media print {
             @page {
                 size: 80mm 200mm;
                 margin: 0mm;
             }
-            body, html {
+            body:not(.is-printing-carta), body:not(.is-printing-carta) html {
                 width: 80mm;
                 height: 200mm;
                 margin: 0 !important;
                 padding: 0 !important;
                 overflow: hidden !important;
             }
-            body * { visibility: hidden; }
-            #printArea, #printArea * { visibility: visible; }
-            #printArea { 
+            body:not(.is-printing-carta) * { visibility: hidden; }
+            #printArea:not(.print-format-carta), #printArea:not(.print-format-carta) * { visibility: visible; }
+            #printArea:not(.print-format-carta) { 
                 display: block !important; 
                 position: absolute !important; 
                 left: 0 !important; 
@@ -59,6 +61,34 @@
                 page-break-inside: avoid !important;
             }
             .no-print { display: none !important; }
+        }
+
+        /* 2. CONFIGURACIÓN EXCLUSIVA PARA EL FORMATO CARTA (OFICIO DE DEVOLUCIÓN) */
+        @media print {
+            @page carta-page {
+                size: letter portrait;
+                margin: 15mm 20mm 15mm 20mm;
+            }
+            body.is-printing-carta, 
+            body.is-printing-carta * { 
+                visibility: hidden !important; 
+            }
+            #printArea.print-format-carta, 
+            #printArea.print-format-carta * { 
+                visibility: visible !important; 
+            }
+            #printArea.print-format-carta {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                page: carta-page;
+            }
         }
     </style>
 </head>
@@ -239,7 +269,7 @@
                             </table>
                         </div>
 
-                        <!-- TOTALES Y BOTONES (SIN IVA) -->
+                        <!-- TOTALES Y BOTONES -->
                         <div class="bg-betesda-softgreen p-4 rounded-2xl border border-betesda-lightgreen flex flex-col sm:flex-row justify-between items-center gap-4">
                             <div class="flex flex-wrap gap-4 text-xs font-bold text-betesda-darkgreen">
                                 <div class="text-sm">Total a Pagar: <span id="lblTotal" class="font-mono text-lg text-betesda-green">$0.00</span></div>
@@ -606,7 +636,7 @@
         </div>
     </div>
 
-    <!-- MODAL CANCELAR NOTA (CON VISTA PREVIA) -->
+    <!-- MODAL CANCELAR NOTA (CON VISTA PREVIA Y VALIDACIÓN BANCARIA) -->
     <div id="modalCancelarNota" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-3xl shadow-2xl border-4 border-rose-500 p-6 w-full max-w-xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-rose-100 pb-2">
@@ -647,6 +677,27 @@
                     </div>
                 </div>
 
+                <!-- DATOS BANCARIOS REQUERIDOS SI ES TARJETA O TRANSFERENCIA -->
+                <div id="seccionDatosBancariosDevolucion" class="space-y-2 bg-amber-50 p-3 rounded-xl border border-amber-200 hidden">
+                    <div class="font-bold text-amber-900 uppercase text-xs flex items-center gap-1">
+                        <i class="fa-solid fa-building-columns"></i> Datos para Solicitud de Devolución (Pago por Tarjeta/Transferencia)
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase">Institución Bancaria:</label>
+                            <input type="text" id="inputBancoDevolucion" placeholder="Ej. BBVA-BANCOMER" class="w-full bg-white border border-amber-300 rounded-lg p-2 text-xs uppercase font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase">Cuenta o CLABE:</label>
+                            <input type="text" id="inputClabeDevolucion" placeholder="Número de cuenta o CLABE" class="w-full bg-white border border-amber-300 rounded-lg p-2 text-xs uppercase font-mono">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase">Nombre del Titular de la Cuenta:</label>
+                            <input type="text" id="inputTitularDevolucion" placeholder="NOMBRE COMPLETO DEL TITULAR" class="w-full bg-white border border-amber-300 rounded-lg p-2 text-xs uppercase font-medium">
+                        </div>
+                    </div>
+                </div>
+
                 <div id="seccionMotivoCancelacion" class="space-y-2 hidden">
                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Motivo de Cancelación:</label>
                     <textarea id="inputMotivoCancelacion" rows="2" placeholder="Escriba el motivo detallado..." class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 text-xs font-medium outline-none focus:border-rose-500"></textarea>
@@ -656,7 +707,7 @@
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button type="button" onclick="cerrarModalCancelarNota()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cerrar</button>
                 <button type="button" id="btnConfirmarCancelacionFinal" onclick="ejecutarCancelacionNota()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Confirmar Cancelación
+                    <i class="fa-solid fa-triangle-exclamation"></i> Confirmar Cancelación y Generar Formato
                 </button>
             </div>
         </div>
@@ -676,6 +727,9 @@
 
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" onclick="cerrarModalDetalleVenta()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs">Cerrar</button>
+                <button id="btnReimprimirCancelacionDesdeDetalle" type="button" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
+                    <i class="fa-solid fa-file-contract"></i> Reimprimir Formato Devolución
+                </button>
                 <button id="btnMarcarEntregadoDesdeDetalle" type="button" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 hidden">
                     <i class="fa-solid fa-check-double"></i> Marcar como Entregado
                 </button>
@@ -728,7 +782,6 @@
 
         let productosDB = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
         let micasDB = JSON.parse(localStorage.getItem('opti_betesda_micas')) || [];
-        let serviciosDB = JSON.parse(localStorage.getItem('opti_betesda_services')) || [];
         let existenciasDB = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || JSON.parse(localStorage.getItem('opti_betesda_inventario')) || [];
         let ventasRealizadasDB = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
         let cierresCajaDB = JSON.parse(localStorage.getItem('opti_betesda_cierres_caja')) || [];
@@ -793,7 +846,6 @@
                 if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
                 
                 aplicarPermisosMenu();
-
                 startSidebarTimer();
             } else {
                 document.getElementById('loginScreen').classList.remove('hidden');
@@ -964,7 +1016,8 @@
                 return;
             }
 
-            serviciosDB = JSON.parse(localStorage.getItem('opti_betesda_services')) || [];
+            // CARGA DINÁMICA Y EN TIEMPO REAL DE LOS SERVICIOS REGISTRADOS (Llave corregida en español)
+            let serviciosDB = JSON.parse(localStorage.getItem('opti_betesda_servicios')) || [];
             const q = query.toLowerCase().trim();
             
             const armazonesEnCarrito = carrito.filter(item => item.tipoArmazonVenta || item.rawProducto);
@@ -1086,7 +1139,7 @@
                     let itemRes = {
                         tipo: 'SERVICIO',
                         id: s.id,
-                        nombre: `Servicio: ${s.nombre}`,
+                        nombre: `${s.nombre}`,
                         detalles: `Servicio Profesional`,
                         precio: parseFloat(s.precio) || 0
                     };
@@ -1704,6 +1757,11 @@
                     ? `<button onclick="abrirVistaPreviaOrdenLaboratorio('${v.nota}')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Vista Previa Orden de Laboratorio"><i class="fa-solid fa-glasses"></i></button>`
                     : '';
 
+                let btnReimprimirCancelacion = '';
+                if (v.cancelada && v.devolucionBancaria) {
+                    btnReimprimirCancelacion = `<button onclick="reimprimirFormatoDevolucion('${v.nota}')" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Reimprimir Formato Devolución"><i class="fa-solid fa-file-contract"></i></button>`;
+                }
+
                 let rowStyle = v.cancelada ? 'opacity-60 bg-rose-50/50' : '';
 
                 tbody.innerHTML += `
@@ -1729,6 +1787,7 @@
                                 <button onclick="reimprimirTicket('${v.nota}')" class="bg-slate-600 hover:bg-slate-700 text-white px-2 py-1.5 rounded-lg text-xs shadow transition" title="Reimprimir Ticket">
                                     <i class="fa-solid fa-print"></i>
                                 </button>
+                                ${btnReimprimirCancelacion}
                                 ${btnOrdenLab}
                                 ${btnAbonar}
                                 ${btnMarcarEntregadoRow}
@@ -1813,6 +1872,8 @@
             localStorage.setItem('opti_betesda_cierres_caja', JSON.stringify(cierresCajaDB));
 
             const printArea = document.getElementById('printArea');
+            printArea.className = ''; 
+            printArea.style.cssText = '';
             printArea.innerHTML = `
                 <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
                     
@@ -1861,7 +1922,11 @@
         function abrirModalCancelarNota() {
             document.getElementById('inputNotaACancelar').value = '';
             document.getElementById('inputMotivoCancelacion').value = '';
+            document.getElementById('inputBancoDevolucion').value = '';
+            document.getElementById('inputClabeDevolucion').value = '';
+            document.getElementById('inputTitularDevolucion').value = '';
             document.getElementById('seccionInfoNotaCancelacion').classList.add('hidden');
+            document.getElementById('seccionDatosBancariosDevolucion').classList.add('hidden');
             document.getElementById('seccionMotivoCancelacion').classList.add('hidden');
             document.getElementById('btnConfirmarCancelacionFinal').classList.add('hidden');
             document.getElementById('modalCancelarNota').classList.remove('hidden');
@@ -1882,6 +1947,7 @@
             if (!venta) {
                 alert("No se encontró ninguna venta con el número de nota especificado.");
                 document.getElementById('seccionInfoNotaCancelacion').classList.add('hidden');
+                document.getElementById('seccionDatosBancariosDevolucion').classList.add('hidden');
                 document.getElementById('seccionMotivoCancelacion').classList.add('hidden');
                 document.getElementById('btnConfirmarCancelacionFinal').classList.add('hidden');
                 return;
@@ -1912,6 +1978,18 @@
 
             document.getElementById('seccionInfoNotaCancelacion').classList.remove('hidden');
             document.getElementById('seccionMotivoCancelacion').classList.remove('hidden');
+
+            const metodoPagoUpper = (venta.metodoPago || '').toUpperCase();
+            const esBancario = metodoPagoUpper.includes('TARJETA') || metodoPagoUpper.includes('TRANSFERENCIA');
+            const seccionBanco = document.getElementById('seccionDatosBancariosDevolucion');
+
+            if (esBancario) {
+                seccionBanco.classList.remove('hidden');
+                document.getElementById('inputTitularDevolucion').value = venta.paciente || '';
+            } else {
+                seccionBanco.classList.add('hidden');
+            }
+
             document.getElementById('btnConfirmarCancelacionFinal').classList.remove('hidden');
             showToast("Nota encontrada correctamente", "success");
         }
@@ -1928,11 +2006,30 @@
             const venta = ventasRealizadasDB.find(v => v.nota.toUpperCase() === notaInput);
             if (!venta) return;
 
+            const metodoPagoUpper = (venta.metodoPago || '').toUpperCase();
+            const esBancario = metodoPagoUpper.includes('TARJETA') || metodoPagoUpper.includes('TRANSFERENCIA');
+
+            let datosBancariosDevolucion = null;
+            if (esBancario) {
+                const banco = document.getElementById('inputBancoDevolucion').value.trim();
+                const clabe = document.getElementById('inputClabeDevolucion').value.trim();
+                const titular = document.getElementById('inputTitularDevolucion').value.trim();
+
+                if (!banco || !clabe || !titular) {
+                    alert("Al ser un pago por Tarjeta o Transferencia, es obligatorio capturar el Banco, Cuenta/CLABE y el Titular para generar la solicitud de devolución.");
+                    return;
+                }
+                datosBancariosDevolucion = { banco, clabe, titular };
+            }
+
             venta.cancelada = true;
             venta.estadoTaller = 'Cancelado';
             venta.motivoCancelacion = motivo;
             venta.fechaCancelacion = new Date().toLocaleDateString('es-MX');
             venta.usuarioCancelacion = currentUser ? currentUser.user : 'Admin';
+            if (datosBancariosDevolucion) {
+                venta.devolucionBancaria = datosBancariosDevolucion;
+            }
 
             venta.items.forEach(item => {
                 if (item.tipo === 'PRODUCTO' && item.rawProducto) {
@@ -1955,8 +2052,156 @@
 
             cerrarModalCancelarNota();
             renderVentasDiarias();
-            generarImpresionTicketCancelacion(venta, motivo);
+
+            if (esBancario && datosBancariosDevolucion) {
+                generarImpresionFormatoDevolucionPDF(venta, motivo, datosBancariosDevolucion);
+            } else {
+                generarImpresionTicketCancelacion(venta, motivo);
+            }
+
             showToast(`Nota ${venta.nota} cancelada correctamente`, "success");
+        }
+
+        function reimprimirFormatoDevolucion(notaId) {
+            const venta = ventasRealizadasDB.find(v => v.nota === notaId);
+            if (!venta || !venta.cancelada || !venta.devolucionBancaria) {
+                showToast("No se encontró formato de devolución para esta nota", "error");
+                return;
+            }
+            generarImpresionFormatoDevolucionPDF(venta, venta.motivoCancelacion || 'Cancelación de nota', venta.devolucionBancaria);
+            showToast(`Reimprimiendo formato de devolución ${venta.nota}`, "success");
+        }
+
+        function generarImpresionFormatoDevolucionPDF(ventaObj, motivo, datosBanco) {
+            const importeTotal = ventaObj.montoCobradoAhora !== undefined ? ventaObj.montoCobradoAhora : ventaObj.total;
+            
+            const fechaObj = new Date();
+            const opcionesFecha = { day: 'numeric', month: 'long', year: 'numeric' };
+            const fechaActualStr = fechaObj.toLocaleDateString('es-ES', opcionesFecha);
+
+            let conceptosStr = ventaObj.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+
+            function numeroALetras(cantidad) {
+                const enteros = Math.floor(cantidad);
+                const centavos = Math.round((cantidad - enteros) * 100);
+                const centavosStr = String(centavos).padStart(2, '0');
+
+                function unidades(num) {
+                    switch (num) {
+                        case 1: return 'UN'; case 2: return 'DOS'; case 3: return 'TRES'; case 4: return 'CUATRO';
+                        case 5: return 'CINCO'; case 6: return 'SEIS'; case 7: return 'SIETE'; case 8: return 'OCHO'; case 9: return 'NUEVE'; default: return '';
+                    }
+                }
+                function decenas(num) {
+                    const decena = Math.floor(num / 10);
+                    const unidad = num % 10;
+                    switch (decena) {
+                        case 1:
+                            switch (unidad) {
+                                case 0: return 'DIEZ'; case 1: return 'ONCE'; case 2: return 'DOCE'; case 3: return 'TRECE'; case 4: return 'CATORCE'; case 5: return 'QUINCE'; default: return 'DIECI' + unidades(unidad);
+                            }
+                        case 2: return unidad === 0 ? 'VEINTE' : 'VEINTI' + unidades(unidad);
+                        case 3: return 'TREINTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 4: return 'CUARENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 5: return 'CINCUENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 6: return 'SESENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 7: return 'SETENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 8: return 'OCHENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 9: return 'NOVENTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
+                        case 0: return unidades(unidad);
+                    }
+                }
+                function centenas(num) {
+                    const centena = Math.floor(num / 100);
+                    const resto = num % 100;
+                    switch (centena) {
+                        case 1: return resto > 0 ? 'CIENTO ' + decenas(resto) : 'CIEN';
+                        case 2: return 'DOSCIENTOS ' + decenas(resto);
+                        case 3: return 'TRESCIENTOS ' + decenas(resto);
+                        case 4: return 'CUATROCIENTOS ' + decenas(resto);
+                        case 5: return 'QUINIENTOS ' + decenas(resto);
+                        case 6: return 'SEISCIENTOS ' + decenas(resto);
+                        case 7: return 'SETECIENTOS ' + decenas(resto);
+                        case 8: return 'OCHOCIENTOS ' + decenas(resto);
+                        case 9: return 'NOVECIENTOS ' + decenas(resto);
+                        default: return decenas(resto);
+                    }
+                }
+                function miles(num) {
+                    const divisor = 1000;
+                    const cientos = Math.floor(num / divisor);
+                    const resto = num % divisor;
+                    let strMiles = '';
+                    if (cientos === 1) strMiles = 'UN MIL';
+                    else if (cientos > 1) strMiles = centenas(cientos).trim() + ' MIL';
+                    const strCentenas = centenas(resto).trim();
+                    if (strMiles === '') return strCentenas;
+                    return (strMiles + ' ' + strCentenas).trim();
+                }
+
+                let letras = enteros === 0 ? 'CERO' : enteros < 1000 ? centenas(enteros).trim() : miles(enteros).trim();
+                return `${letras} PESOS ${centavosStr}/100 M.N.`;
+            }
+
+            const importeLetras = numeroALetras(importeTotal);
+
+            const printArea = document.getElementById('printArea');
+            printArea.className = 'print-format-carta'; 
+            document.body.classList.add('is-printing-carta');
+
+            printArea.style.cssText = `
+                display: block !important;
+                width: 100% !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            `;
+
+            printArea.innerHTML = `
+                <div style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; color: #000; line-height: 1.8; width: 100%; box-sizing: border-box; padding: 20mm 25mm;">
+                    
+                    <div style="font-weight: bold; font-size: 14pt; margin-bottom: 25px; text-transform: uppercase;">
+                        ÓPTICA BETESDA
+                    </div>
+
+                    <div style="font-weight: bold; margin-bottom: 25px; font-size: 12pt;">
+                        PRESENTE:
+                    </div>
+
+                    <div style="text-align: right; margin-bottom: 25px; font-size: 12pt;">
+                        Oaxaca de Juárez, Oaxaca a ${fechaActualStr}.
+                    </div>
+
+                    <div style="font-weight: bold; margin-bottom: 25px; font-size: 12pt; text-transform: uppercase;">
+                        Asunto: Se solicita devolución (Nota: ${ventaObj.nota})
+                    </div>
+
+                    <div style="text-align: justify; margin-bottom: 20px; text-indent: 40px;">
+                        Solicito la devolución por la cantidad de: <strong>$${importeTotal.toFixed(2)} (${importeLetras})</strong>. Importe que fue pagado por el concepto de: <strong>${conceptosStr}</strong>, con fecha: <strong>${ventaObj.fecha}</strong>.
+                    </div>
+
+                    <div style="text-align: justify; margin-bottom: 50px; text-indent: 40px;">
+                        El motivo de la cancelación es: <strong>${motivo.toUpperCase()}</strong>, por lo que autorizo que se deposite a la cuenta bancaria número: <strong>${datosBanco.clabe}</strong> con clabe: <strong>${datosBanco.clabe}</strong> de la institución bancaria: <strong>${datosBanco.banco.toUpperCase()}</strong> de la que soy Titular, nombre completo <strong>${datosBanco.titular.toUpperCase()}</strong>.
+                    </div>
+
+                    <div style="margin-bottom: 50px;">
+                        Sin otro en particular reciba un cordial saludo
+                    </div>
+
+                    <div style="text-align: center; margin-top: 60px; page-break-inside: avoid;">
+                        <div style="font-weight: bold; margin-bottom: 50px; font-size: 12pt; letter-spacing: 0.5px;">ATENTAMENTE</div>
+                        <div style="border-top: 1px solid #000; width: 320px; margin: 0 auto; padding-top: 5px; font-weight: bold; font-size: 11pt;">
+                            NOMBRE Y FIRMA
+                        </div>
+                    </div>
+
+                </div>
+            `;
+            setTimeout(() => { 
+                window.print(); 
+                document.body.classList.remove('is-printing-carta');
+                printArea.className = '';
+            }, 250);
         }
 
         function generarImpresionTicketCancelacion(ventaObj, motivo) {
@@ -1967,9 +2212,10 @@
             });
 
             const printArea = document.getElementById('printArea');
+            printArea.className = '';
+            printArea.style.cssText = '';
             printArea.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
-                    
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 76mm; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
                     <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
                         <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
                         <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
@@ -2004,7 +2250,6 @@
                         La nota ha sido anulada en el sistema y el inventario ha sido devuelto.<br>
                         Óptica Betesda
                     </div>
-
                 </div>
             `;
             setTimeout(() => { window.print(); }, 200);
@@ -2054,9 +2299,10 @@
             });
 
             const printArea = document.getElementById('printArea');
+            printArea.className = '';
+            printArea.style.cssText = '';
             printArea.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
-                    
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 76mm; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
                     <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
                         <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
                         <h2 style="margin: 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
@@ -2094,10 +2340,8 @@
                         ¡Gracias por su confianza y preferencia!<br>
                         Óptica Betesda
                     </div>
-
                 </div>
             `;
-
             setTimeout(() => { window.print(); }, 200);
         }
 
@@ -2262,8 +2506,10 @@
             });
 
             const printArea = document.getElementById('printArea');
+            printArea.className = '';
+            printArea.style.cssText = '';
             printArea.innerHTML = `
-                <div style="font-family: sans-serif; font-size: 12px; font-weight: bold; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3;">
+                <div style="font-family: sans-serif; font-size: 12px; font-weight: bold; color: #000; width: 76mm; box-sizing: border-box; line-height: 1.3;">
                     <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
                         <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 120px; max-height: 75px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
                         <h2 style="margin: 0; font-size: 15px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
@@ -2448,8 +2694,10 @@
             ventaObj.historialAbonos.forEach(a => totalAbonado += a.monto);
 
             const printArea = document.getElementById('printArea');
+            printArea.className = '';
+            printArea.style.cssText = '';
             printArea.innerHTML = `
-                <div style="font-family: sans-serif; font-size: 13px; font-weight: bold; color: #000; width: 100%; box-sizing: border-box; line-height: 1.4;">
+                <div style="font-family: sans-serif; font-size: 13px; font-weight: bold; color: #000; width: 76mm; box-sizing: border-box; line-height: 1.4; padding: 2mm;">
                     <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 8px;">
                         <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 130px; max-height: 85px; object-fit: contain; margin: 0 auto 6px auto; display: block;" />
                         <h2 style="margin: 0; font-size: 16px; text-transform: uppercase; font-weight: 900;">ÓPTICA BETESDA</h2>
@@ -2573,6 +2821,14 @@
             const btnReimprimirDetalle = document.getElementById('btnReimprimirDesdeDetalle');
             btnReimprimirDetalle.onclick = () => reimprimirTicket(venta.nota);
 
+            const btnReimprimirCancelacionDetalle = document.getElementById('btnReimprimirCancelacionDesdeDetalle');
+            if (venta.cancelada && venta.devolucionBancaria) {
+                btnReimprimirCancelacionDetalle.classList.remove('hidden');
+                btnReimprimirCancelacionDetalle.onclick = () => reimprimirFormatoDevolucion(venta.nota);
+            } else {
+                btnReimprimirCancelacionDetalle.classList.add('hidden');
+            }
+
             const btnMarcarEntregado = document.getElementById('btnMarcarEntregadoDesdeDetalle');
             if (!venta.cancelada && estadoActual !== 'Entregado') {
                 if (saldo > 0) {
@@ -2649,7 +2905,6 @@
                 totalAbonado = ventaObj.montoCobradoAhora || totalCalculado;
             }
 
-            // FUNCIÓN CORREGIDA PARA CONVERTIR NÚMEROS A LETRA
             function numeroALetras(cantidad) {
                 const enteros = Math.floor(cantidad);
                 const centavos = Math.round((cantidad - enteros) * 100);
@@ -2657,32 +2912,17 @@
 
                 function unidades(num) {
                     switch (num) {
-                        case 1: return 'UN';
-                        case 2: return 'DOS';
-                        case 3: return 'TRES';
-                        case 4: return 'CUATRO';
-                        case 5: return 'CINCO';
-                        case 6: return 'SEIS';
-                        case 7: return 'SIETE';
-                        case 8: return 'OCHO';
-                        case 9: return 'NUEVE';
-                        default: return '';
+                        case 1: return 'UN'; case 2: return 'DOS'; case 3: return 'TRES'; case 4: return 'CUATRO';
+                        case 5: return 'CINCO'; case 6: return 'SEIS'; case 7: return 'SIETE'; case 8: return 'OCHO'; case 9: return 'NUEVE'; default: return '';
                     }
                 }
-
                 function decenas(num) {
                     const decena = Math.floor(num / 10);
                     const unidad = num % 10;
                     switch (decena) {
                         case 1:
                             switch (unidad) {
-                                case 0: return 'DIEZ';
-                                case 1: return 'ONCE';
-                                case 2: return 'DOCE';
-                                case 3: return 'TRECE';
-                                case 4: return 'CATORCE';
-                                case 5: return 'QUINCE';
-                                default: return 'DIECI' + unidades(unidad);
+                                case 0: return 'DIEZ'; case 1: return 'ONCE'; case 2: return 'DOCE'; case 3: return 'TRECE'; case 4: return 'CATORCE'; case 5: return 'QUINCE'; default: return 'DIECI' + unidades(unidad);
                             }
                         case 2: return unidad === 0 ? 'VEINTE' : 'VEINTI' + unidades(unidad);
                         case 3: return 'TREINTA' + (unidad > 0 ? ' Y ' + unidades(unidad) : '');
@@ -2695,7 +2935,6 @@
                         case 0: return unidades(unidad);
                     }
                 }
-
                 function centenas(num) {
                     const centena = Math.floor(num / 100);
                     const resto = num % 100;
@@ -2712,7 +2951,6 @@
                         default: return decenas(resto);
                     }
                 }
-
                 function miles(num) {
                     const divisor = 1000;
                     const cientos = Math.floor(num / divisor);
@@ -2720,24 +2958,21 @@
                     let strMiles = '';
                     if (cientos === 1) strMiles = 'UN MIL';
                     else if (cientos > 1) strMiles = centenas(cientos).trim() + ' MIL';
-                    
                     const strCentenas = centenas(resto).trim();
                     if (strMiles === '') return strCentenas;
                     return (strMiles + ' ' + strCentenas).trim();
                 }
 
-                let letras = '';
-                if (enteros === 0) letras = 'CERO';
-                else if (enteros < 1000) letras = centenas(enteros).trim();
-                else letras = miles(enteros).trim();
-
+                let letras = enteros === 0 ? 'CERO' : enteros < 1000 ? centenas(enteros).trim() : miles(enteros).trim();
                 const moneda = enteros === 1 ? 'PESO' : 'PESOS';
                 return `SON: ${letras} ${moneda} ${centavosStr}/100 M.N.`;
             }
 
             const printArea = document.getElementById('printArea');
+            printArea.className = '';
+            printArea.style.cssText = '';
             printArea.innerHTML = `
-                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 100%; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #000; width: 76mm; box-sizing: border-box; line-height: 1.3; background: #fff; padding: 2mm;">
                     
                     <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
                         <img src="opticas.jpeg" alt="Logo Óptica Betesda" style="width: 110px; max-height: 70px; object-fit: contain; margin: 0 auto 4px auto; display: block;" />
