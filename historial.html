@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Ventas - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Historial de Ventas</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col h-screen overflow-hidden hidden">
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow shrink-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[11px] text-betesda-lightgreen font-medium">Historial y Filtros de Ventas</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto overflow-hidden">
+            <!-- BARRA LATERAL UNIFICADA -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" data-module="index.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" data-module="inventario.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" data-module="ventas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" data-module="taller.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" data-module="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" data-module="existencias.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" data-module="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" data-module="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" data-module="servicios.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" data-module="loggin.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+                <a href="historial_ventas.html" data-module="historial_ventas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Historial de Ventas</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto">
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-6 flex flex-col h-full overflow-hidden">
+                    
+                    <!-- ENCABEZADO Y FILTROS -->
+                    <div class="flex flex-col gap-4 mb-4 pb-4 border-b border-betesda-lightgreen shrink-0">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <h2 class="text-base font-bold text-betesda-green flex items-center gap-2">
+                                <i class="fa-solid fa-filter text-betesda-yellow"></i> Filtros del Historial de Ventas
+                            </h2>
+                            <button onclick="resetFilters()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-xl text-xs transition">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar Filtros
+                            </button>
+                        </div>
+
+                        <!-- FILTROS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Fecha Inicial</label>
+                                <input type="date" id="filterFechaInicio" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Fecha Final</label>
+                                <input type="date" id="filterFechaFin" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Usuario / Vendedor</label>
+                                <select id="filterUsuario" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-bold text-betesda-green">
+                                    <option value="TODOS">Todos los Usuarios</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Buscar (Paciente / Nota)</label>
+                                <input type="text" id="searchInput" oninput="renderHistorialVentas()" placeholder="Ej. Juan Pérez, Nota #..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DE VENTAS -->
+                    <div class="overflow-y-auto flex-grow max-h-[calc(100vh-320px)] pr-1">
+                        <table class="w-full text-left text-xs text-slate-700">
+                            <thead class="bg-betesda-green text-white font-bold sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Fecha / Hora</th>
+                                    <th class="p-3">Nota / Folio</th>
+                                    <th class="p-3">Paciente</th>
+                                    <th class="p-3">Estado de Pago</th>
+                                    <th class="p-3">Vendedor</th>
+                                    <th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-center rounded-r-xl">Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ventasTableBody" class="divide-y divide-betesda-lightgreen/50">
+                                <tr><td colspan="7" class="p-6 text-center text-slate-400">Cargando ventas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- RESUMEN / TOTALES -->
+                    <div class="mt-3 pt-3 border-t border-betesda-lightgreen flex justify-between items-center px-2 shrink-0">
+                        <span id="totalVentasCount" class="text-xs font-bold text-slate-500">Mostrando 0 ventas</span>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-500 mr-2">Suma Total Filtrada:</span>
+                            <span id="totalVentasSum" class="text-sm font-extrabold text-betesda-green">$0.00</span>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- VENTANA FLOTANTE (MODAL DETALLE DE VENTA Y ARTÍCULOS) -->
+    <div id="modalDetalleVenta" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-betesda-green text-white p-4 flex justify-between items-center">
+                <h3 class="font-extrabold text-sm uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-betesda-yellow"></i> Desglose Completo de la Venta
+                </h3>
+                <button onclick="cerrarModal()" class="text-white hover:text-betesda-yellow text-base font-bold">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="modalBodyContent" class="p-6 space-y-4 overflow-y-auto text-xs text-slate-700">
+                <!-- Contenido dinámico inyectado por JS -->
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-betesda-lightgreen flex justify-end">
+                <button onclick="cerrarModal()" class="bg-betesda-green text-white font-bold px-4 py-2 rounded-xl text-xs shadow">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let usersDB = JSON.parse(localStorage.getItem('opti_betesda_users')) || [{ user: 'Admin', pass: 'Alex150515', role: 'Administrador' }];
+        let ventasGlobales = [];
+        let currentUser = null;
+        let sidebarTimer = null;
+
+        window.onload = function() { 
+            checkSession(); 
+            poblarSelectUsuarios();
+        };
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                startSidebarTimer();
+                renderHistorialVentas();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { alert("Usuario o contraseña incorrectos"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function poblarSelectUsuarios() {
+            const select = document.getElementById('filterUsuario');
+            if (!select) return;
+            select.innerHTML = '<option value="TODOS">Todos los Usuarios</option>';
+            usersDB.forEach(u => {
+                select.innerHTML += `<option value="${u.user}">${u.user}</option>`;
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('filterFechaInicio').value = '';
+            document.getElementById('filterFechaFin').value = '';
+            document.getElementById('filterUsuario').value = 'TODOS';
+            document.getElementById('searchInput').value = '';
+            renderHistorialVentas();
+        }
+
+        function renderHistorialVentas() {
+            const tbody = document.getElementById('ventasTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            ventasGlobales = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+
+            const fechaInicio = document.getElementById('filterFechaInicio')?.value;
+            const fechaFin = document.getElementById('filterFechaFin')?.value;
+            const usuarioFiltro = document.getElementById('filterUsuario')?.value || 'TODOS';
+            const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+            let sumaTotal = 0;
+            let contador = 0;
+
+            const filtered = ventasGlobales.filter((v, index) => {
+                v.originalIndex = index;
+                let vFechaStr = v.fecha ? v.fecha.split(' ')[0] : '';
+                
+                let matchFecha = true;
+                if (fechaInicio && vFechaStr < fechaInicio) matchFecha = false;
+                if (fechaFin && vFechaStr > fechaFin) matchFecha = false;
+
+                let vendedorVenta = v.vendedor || 'Admin';
+                let matchUsuario = (usuarioFiltro === 'TODOS' || vendedorVenta.toLowerCase() === usuarioFiltro.toLowerCase());
+
+                let articulosTexto = '';
+                const listaItems = v.items || v.carrito;
+                if (Array.isArray(listaItems)) {
+                    articulosTexto = listaItems.map(item => item.nombre || item.descripcion || '').join(' ');
+                }
+
+                let textoCompleto = `${v.fecha || ''} ${v.nota || ''} ${v.paciente || ''} ${v.detalle || ''} ${v.vendedor || ''} ${articulosTexto}`.toLowerCase();
+                let matchSearch = textoCompleto.includes(search);
+
+                return matchFecha && matchUsuario && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No se encontraron ventas con los filtros aplicados.</td></tr>`;
+                document.getElementById('totalVentasCount').textContent = `Mostrando 0 ventas`;
+                document.getElementById('totalVentasSum').textContent = `$0.00`;
+                return;
+            }
+
+            filtered.forEach(v => {
+                let totalVenta = Number(v.total) || 0;
+                let saldoPendiente = Number(v.saldoPendiente) || 0;
+                let anticipo = Number(v.montoCobradoAhora) || (totalVenta - saldoPendiente);
+                
+                if (v.cancelada) {
+                    totalVenta = 0;
+                } else {
+                    sumaTotal += totalVenta;
+                }
+                contador++;
+
+                let estadoPagoHTML = '';
+                if (v.cancelada) {
+                    estadoPagoHTML = `<span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full font-bold text-[10px]">Cancelada</span>`;
+                } else if (saldoPendiente > 0) {
+                    estadoPagoHTML = `<span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold text-[10px]">Anticipo (Resta: $${saldoPendiente.toFixed(2)})</span>`;
+                } else {
+                    estadoPagoHTML = `<span class="bg-betesda-lightgreen text-betesda-darkgreen px-2.5 py-1 rounded-full font-bold text-[10px]"><i class="fa-solid fa-check mr-1"></i> Liquidado</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen ${v.cancelada ? 'opacity-60 bg-rose-50/50' : ''}">
+                        <td class="p-3 font-mono text-slate-500">${v.fecha || 'N/D'} ${v.hora || ''}</td>
+                        <td class="p-3 font-bold text-betesda-green">${v.nota || 'S/N'}</td>
+                        <td class="p-3 font-semibold text-slate-800">${v.paciente || 'General'}</td>
+                        <td class="p-3">${estadoPagoHTML}</td>
+                        <td class="p-3 font-medium text-betesda-darkgreen">${v.vendedor || 'Admin'}</td>
+                        <td class="p-3 text-right font-extrabold text-betesda-green">$${(Number(v.total) || 0).toFixed(2)}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="verDetalleVenta(${v.originalIndex})" class="bg-betesda-lightgreen text-betesda-darkgreen hover:bg-betesda-green hover:text-white px-3 py-1.5 rounded-xl font-bold transition shadow-sm">
+                                <i class="fa-solid fa-eye mr-1"></i> Ver
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('totalVentasCount').textContent = `Mostrando ${contador} ${contador === 1 ? 'venta' : 'ventas'}`;
+            document.getElementById('totalVentasSum').textContent = `$${sumaTotal.toFixed(2)}`;
+        }
+
+        function verDetalleVenta(index) {
+            const v = ventasGlobales[index];
+            if (!v) return;
+
+            let tablaArticulosHTML = '';
+            const listaItems = v.items || v.carrito;
+            
+            if (Array.isArray(listaItems) && listaItems.length > 0) {
+                let filas = '';
+                listaItems.forEach(item => {
+                    let nombreItem = item.nombre || item.descripcion || item.codigo || 'Artículo sin nombre';
+                    let cantidad = item.cantidad || 1;
+                    let descPct = item.descuentoPorcentaje || 0;
+                    let precioUnitarioBase = Number(item.precio || item.precioVenta || 0);
+                    let precioFinal = precioUnitarioBase * (1 - descPct / 100);
+                    let subtotalItem = cantidad * precioFinal;
+
+                    let rxHtml = '';
+                    if (item.rx) {
+                        rxHtml = `
+                            <div class="text-[10px] font-mono text-slate-500 mt-0.5">
+                                <strong>RX:</strong> OD (ESF:${item.rx.od?.esf} CIL:${item.rx.od?.cil}) | OI (ESF:${item.rx.oi?.esf} CIL:${item.rx.oi?.cil})
+                            </div>
+                        `;
+                    }
+
+                    filas += `
+                        <tr class="border-b">
+                            <td class="p-2.5 font-medium text-slate-800">
+                                ${nombreItem}
+                                ${rxHtml}
+                            </td>
+                            <td class="p-2.5 text-center font-bold">${cantidad}</td>
+                            <td class="p-2.5 text-right">$${precioFinal.toFixed(2)}</td>
+                            <td class="p-2.5 text-right font-extrabold text-betesda-green">$${subtotalItem.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                tablaArticulosHTML = `
+                    <div class="overflow-x-auto border border-betesda-lightgreen rounded-2xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-betesda-green text-white font-bold">
+                                <tr>
+                                    <th class="p-2.5">Artículo / Descripción</th>
+                                    <th class="p-2.5 text-center">Cant.</th>
+                                    <th class="p-2.5 text-right">Precio U.</th>
+                                    <th class="p-2.5 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-betesda-lightgreen/50 bg-white">${filas}</tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                tablaArticulosHTML = `
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-betesda-lightgreen text-center text-slate-500 font-medium">
+                        ${v.detalle || 'Venta registrada sin desglose detallado de artículos.'}
+                    </div>
+                `;
+            }
+
+            let totalVenta = Number(v.total) || 0;
+            let saldoPendiente = Number(v.saldoPendiente) || 0;
+            let totalAbonado = 0;
+
+            if (v.historialAbonos && v.historialAbonos.length > 0) {
+                v.historialAbonos.forEach(a => totalAbonado += Number(a.monto) || 0);
+            } else {
+                totalAbonado = Number(v.montoCobradoAhora) || (totalVenta - saldoPendiente);
+            }
+
+            const modalContent = document.getElementById('modalBodyContent');
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-2xl border border-betesda-lightgreen text-center">
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Nota / Folio</span>
+                        <span class="font-bold text-betesda-green">${v.nota || 'S/N'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Fecha / Hora</span>
+                        <span class="font-bold">${v.fecha || 'N/D'} ${v.hora || ''}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Paciente</span>
+                        <span class="font-bold">${v.paciente || 'General'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Vendedor</span>
+                        <span class="font-bold text-betesda-darkgreen">${v.vendedor || 'Admin'}</span>
+                    </div>
+                </div>
+
+                <div>
+                    <strong class="block text-betesda-green uppercase text-[10px] mb-1.5"><i class="fa-solid fa-boxes-stacked mr-1"></i> Artículos Incluidos en la Venta</strong>
+                    ${tablaArticulosHTML}
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen text-center">
+                    <div>
+                        <span class="block text-[10px] text-slate-500 uppercase font-bold">Total Venta</span>
+                        <span class="font-bold text-slate-800">$${totalVenta.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-blue-600 uppercase font-bold">Total Abonado</span>
+                        <span class="font-bold text-blue-600">$${totalAbonado.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-amber-700 uppercase font-bold">Saldo Pendiente</span>
+                        <span class="font-extrabold text-amber-700">$${saldoPendiente > 0 ? saldoPendiente.toFixed(2) : '0.00 (Liquidado)'}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalDetalleVenta').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalDetalleVenta').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
