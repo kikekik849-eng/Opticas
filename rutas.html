@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutas y Traslados - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #printManifiestoArea, #printManifiestoArea * { visibility: visible; }
+            #printManifiestoArea {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 80mm;
+                padding: 4mm;
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Módulo</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col min-h-screen hidden">
+        <!-- HEADER -->
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow sticky top-0 z-40">
+            <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[10px] text-betesda-lightgreen font-medium">Rutas Logísticas, Envío a Taller Central y Traspasos entre Sucursales</p>
+                    </div>
+                </div>
+
+                <!-- SELECTOR DE SUCURSAL ACTIVA -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="bg-betesda-darkgreen/80 border border-betesda-yellow/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                        <i class="fa-solid fa-store text-betesda-yellow text-xs"></i>
+                        <span class="text-[10px] text-betesda-lightgreen font-bold uppercase hidden sm:inline">Sucursal Activa:</span>
+                        <select id="headerSucursalSelect" onchange="cambiarSucursalActiva(this.value)" class="bg-white text-betesda-darkgreen text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none border border-betesda-yellow cursor-pointer">
+                        </select>
+                        <span id="sucursalLockedBadge" class="hidden text-[10px] font-extrabold text-betesda-yellow uppercase tracking-wide"></span>
+                    </div>
+
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1600px] w-full mx-auto">
+            <!-- SIDEBAR -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto z-30">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" data-module="index.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" data-module="inventario.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" data-module="ventas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" data-module="taller.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" data-module="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" data-module="existencias.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" data-module="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" data-module="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" data-module="servicios.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="sucursales.html" data-module="sucursales.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-store text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Sucursales</span>
+                </a>
+                <a href="rutas.html" data-module="rutas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-route text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Rutas y Traslados</span>
+                </a>
+                <a href="loggin.html" data-module="loggin.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+                <a href="historial.html" data-module="historial.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-clock-rotate-left text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Historial / Auditoría</span>
+                </a>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto">
+                
+                <!-- BANNER SUPERIOR DE LOGÍSTICA -->
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen text-betesda-green shrink-0">
+                            <i class="fa-solid fa-truck-fast text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-extrabold text-betesda-darkgreen uppercase">Control de Rutas, Taller Central y Traspasos</h2>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                Coordina los envíos de <strong>trabajos RX hacia el Taller en Matriz</strong> (sin alterar el stock de la sucursal), retornos a sucursales y <strong>traspasos de inventario</strong> entre almacenes con control de recepción.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap shrink-0 w-full lg:w-auto justify-end">
+                        <button onclick="sincronizarPendientesTaller()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-3.5 py-2.5 rounded-2xl text-xs border border-amber-300 transition flex items-center gap-1.5" title="Detectar notas con mica de sucursales pendientes de traslado a Matriz">
+                            <i class="fa-solid fa-rotate text-betesda-gold"></i> Sincronizar Trabajos RX
+                        </button>
+                        <button onclick="abrirModalNuevaRuta()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus text-betesda-yellow"></i> Nueva Orden de Ruta
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TARJETAS DE RESUMEN -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">En Preparación</span>
+                            <div id="statPreparacion" class="text-2xl font-extrabold text-amber-600 mt-1">0</div>
+                            <span class="text-[10px] text-slate-400">Listos para salir</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">En Ruta / Tránsito</span>
+                            <div id="statEnRuta" class="text-2xl font-extrabold text-sky-600 mt-1">0</div>
+                            <span class="text-[10px] text-slate-400">En traslado activo</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-route"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Trabajos RX a Taller</span>
+                            <div id="statTrabajosTaller" class="text-2xl font-extrabold text-betesda-green mt-1">0</div>
+                            <span class="text-[10px] text-slate-400">Sucursales → Matriz</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-betesda-softgreen text-betesda-green flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-hammer"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Entregados / Recibidos</span>
+                            <div id="statEntregados" class="text-2xl font-extrabold text-emerald-600 mt-1">0</div>
+                            <span class="text-[10px] text-slate-400">Completados</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BANDEJA RÁPIDA DE TRABAJOS RX DE SUCURSALES PENDIENTES DE ENVÍO A TALLER MATRIZ -->
+                <div id="panelAlertasRX" class="bg-amber-50/80 rounded-3xl border-2 border-betesda-yellow p-4 space-y-3 hidden">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-betesda-yellow text-betesda-darkgreen text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase">Centralización Taller Matriz</span>
+                            <h3 class="text-xs font-extrabold text-betesda-darkgreen uppercase">Notas de Venta con Mica pendientes de envío a Taller (Matriz)</h3>
+                        </div>
+                        <span id="contadorAlertasRX" class="text-xs font-extrabold text-amber-800">0 notas</span>
+                    </div>
+                    <div id="listaAlertasRX" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5"></div>
+                </div>
+
+                <!-- FILTROS Y LISTADO DE RUTAS -->
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen p-4 space-y-4">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+                        <h3 class="text-xs font-extrabold text-betesda-green uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-clipboard-list text-betesda-yellow"></i> Bitácora de Órdenes de Ruta y Traslados
+                        </h3>
+                        <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                            <div class="relative flex-grow sm:w-56">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                </span>
+                                <input type="text" id="filtroBusquedaRuta" oninput="renderRutas()" placeholder="Folio, nota, mensajero, producto..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-2 text-xs font-medium outline-none focus:border-betesda-green">
+                            </div>
+                            <select id="filtroTipoRuta" onchange="renderRutas()" class="bg-slate-50 border-2 border-betesda-lightgreen rounded-xl px-3 py-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                                <option value="TODOS">Todos los tipos</option>
+                                <option value="Envío RX a Taller Matriz">Envío RX a Taller Matriz</option>
+                                <option value="Retorno Trabajo Terminado">Retorno Trabajo Terminado</option>
+                                <option value="Traspaso de Inventario">Traspaso de Inventario</option>
+                                <option value="Ruta de Cobranza / Insumos">Ruta de Cobranza / Insumos</option>
+                            </select>
+                            <select id="filtroEstatusRuta" onchange="renderRutas()" class="bg-slate-50 border-2 border-betesda-lightgreen rounded-xl px-3 py-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                                <option value="TODOS">Todos los estatus</option>
+                                <option value="Preparando">Preparando</option>
+                                <option value="En Ruta">En Ruta</option>
+                                <option value="Recibido">Recibido</option>
+                                <option value="Cancelada">Cancelada</option>
+                            </select>
+                            <select id="filtroSucursalRuta" onchange="renderRutas()" class="bg-slate-50 border-2 border-betesda-lightgreen rounded-xl px-3 py-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                                <option value="TODAS">Origen / Destino...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="gridRutas" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL CREAR ORDEN DE RUTA -->
+    <div id="modalNuevaRuta" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-3xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 class="text-base font-extrabold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-route text-betesda-yellow"></i> Generar Orden de Ruta / Traslado
+                </h3>
+                <button onclick="cerrarModalNuevaRuta()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="formNuevaRuta" onsubmit="event.preventDefault(); guardarOrdenRuta();" class="space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Tipo de Movimiento *</label>
+                        <select id="rutaTipo" onchange="ajustarPorTipoRuta()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="Envío RX a Taller Matriz">Envío RX a Taller Matriz</option>
+                            <option value="Retorno Trabajo Terminado">Retorno Trabajo Terminado</option>
+                            <option value="Traspaso de Inventario">Traspaso de Inventario</option>
+                            <option value="Ruta de Cobranza / Insumos">Ruta de Cobranza / Insumos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Sucursal Origen *</label>
+                        <select id="rutaOrigen" onchange="cargarOpcionesArticulosRuta()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Sucursal Destino *</label>
+                        <select id="rutaDestino" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Mensajero / Chofer / Responsable *</label>
+                        <input type="text" id="rutaMensajero" required placeholder="Nombre quien traslada" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Prioridad</label>
+                        <select id="rutaPrioridad" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="Normal">Normal</option>
+                            <option value="Urgente">Urgente (Entrega Hoy)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Estatus Inicial</label>
+                        <select id="rutaEstatusInicial" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="En Ruta">En Ruta (Sale ahora)</option>
+                            <option value="Preparando">Preparando (Pendiente de salida)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- AGREGAR ITEMS / NOTAS A LA RUTA -->
+                <div class="bg-betesda-softgreen p-3.5 rounded-2xl border border-betesda-lightgreen space-y-3">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <span class="text-[11px] font-extrabold text-betesda-darkgreen uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-boxes-packing text-betesda-green"></i> Paquetes / Notas / Productos incluidos en la Ruta
+                        </span>
+                        <label id="chkDescontarStockWrapper" class="flex items-center gap-1.5 text-[11px] font-bold text-betesda-darkgreen cursor-pointer">
+                            <input type="checkbox" id="rutaMoverInventario" class="accent-betesda-green">
+                            <span>Mover stock entre almacenes al recibir (solo traspasos)</span>
+                        </label>
+                    </div>
+
+                    <!-- SELECTOR DESDE EXISTENCIAS O NOTAS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <div class="sm:col-span-6">
+                            <select id="selectItemExistenciaRuta" class="w-full bg-white border border-betesda-lightgreen rounded-xl p-2 text-xs font-medium outline-none focus:border-betesda-green">
+                                <option value="">-- Seleccionar producto o nota RX de origen --</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="number" id="inputCantItemRuta" min="1" value="1" placeholder="Cant." class="w-full bg-white border border-betesda-lightgreen rounded-xl p-2 text-xs font-bold text-center outline-none focus:border-betesda-green">
+                        </div>
+                        <div class="sm:col-span-4">
+                            <button type="button" onclick="agregarItemDesdeSelector()" class="w-full bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold rounded-xl px-3 py-2 text-xs shadow transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-plus text-betesda-yellow"></i> Agregar a Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ENTRADA MANUAL DE PAQUETE / SOBRE RX -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-betesda-lightgreen/70">
+                        <div class="sm:col-span-3">
+                            <input type="text" id="manualCodigoRuta" placeholder="Folio Nota / Código" class="w-full bg-white border border-betesda-lightgreen rounded-xl p-2 text-xs font-mono outline-none focus:border-betesda-green">
+                        </div>
+                        <div class="sm:col-span-5">
+                            <input type="text" id="manualDescRuta" placeholder="Descripción (Ej. Sobre RX Juan Pérez + Armazón)" class="w-full bg-white border border-betesda-lightgreen rounded-xl p-2 text-xs outline-none focus:border-betesda-green">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <input type="number" id="manualCantRuta" min="1" value="1" class="w-full bg-white border border-betesda-lightgreen rounded-xl p-2 text-xs font-bold text-center outline-none focus:border-betesda-green">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <button type="button" onclick="agregarItemManualRuta()" class="w-full bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl px-2 py-2 text-xs transition">
+                                + Manual
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DE ITEMS AGREGADOS -->
+                    <div class="bg-white rounded-xl border border-betesda-lightgreen overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-[10px] font-extrabold text-slate-600 uppercase">
+                                <tr>
+                                    <th class="p-2">Folio / Código</th>
+                                    <th class="p-2">Descripción</th>
+                                    <th class="p-2 text-center">Cant.</th>
+                                    <th class="p-2 text-center">Tipo</th>
+                                    <th class="p-2 text-center">Quitar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyItemsNuevaRuta" class="divide-y divide-slate-100">
+                                <tr><td colspan="5" class="p-4 text-center text-slate-400 italic">Aún no hay paquetes o productos en esta orden de ruta.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Observaciones / Instrucciones de Entrega</label>
+                    <input type="text" id="rutaNotas" placeholder="Ej. Entregar directo en mesa de biselado en Matriz / Recoger efectivo de corte" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-betesda-lightgreen">
+                    <button type="button" onclick="cerrarModalNuevaRuta()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl">Cancelar</button>
+                    <button type="submit" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-paper-plane text-betesda-yellow"></i> Registrar Orden de Ruta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ÁREA OCULTA PARA IMPRESIÓN DE MANIFIESTO TÉRMICO 80MM -->
+    <div id="printManifiestoArea" class="hidden font-mono text-[11px] leading-tight text-black"></div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        const ALL_MODULES = [
+            { id: 'index.html', label: 'Registro de Producto' },
+            { id: 'inventario.html', label: 'Registro de Factura' },
+            { id: 'ventas.html', label: 'Punto de Venta / RX' },
+            { id: 'taller.html', label: 'Módulo de Taller' },
+            { id: 'etiquetado.html', label: 'Etiquetado Rápido' },
+            { id: 'existencias.html', label: 'Existencias / Inventario' },
+            { id: 'entrada_directa.html', label: 'Entrada / Ajustes' },
+            { id: 'catalogo_micas.html', label: 'Catálogo de Micas' },
+            { id: 'servicios.html', label: 'Gestión de Servicios' },
+            { id: 'sucursales.html', label: 'Sucursales' },
+            { id: 'rutas.html', label: 'Rutas y Traslados' },
+            { id: 'loggin.html', label: 'Gestión de Usuarios' },
+            { id: 'historial.html', label: 'Historial / Auditoría' }
+        ];
+
+        const MATRIZ_DEFAULT = {
+            id: 'SUC-001',
+            clave: 'SUC-001',
+            nombre: 'Matriz',
+            direccion: 'PENSAMIENTOS 201, COL REFORMA OAXACA DE JUAREZ CP.68050',
+            telefono: '9515010993',
+            encargado: 'Administrador General',
+            horario: 'L-V 8:00 AM - 8:00 PM | S 8:00 AM - 2:00 PM',
+            prefijoNota: 'NOTA',
+            estatus: 'Activa',
+            esMatriz: true
+        };
+
+        let defaultAdmin = {
+            user: 'Admin',
+            pass: 'Alex150515',
+            role: 'Administrador',
+            sucursalId: 'TODAS',
+            modulos: ALL_MODULES.map(m => m.id)
+        };
+
+        function esUsuarioAdministrador(userObj) {
+            if (!userObj) return false;
+            const u = String(userObj.user || '').trim().toLowerCase();
+            const r = String(userObj.role || '').trim().toLowerCase();
+            const s = String(userObj.sucursalId || userObj.sucursal_id || userObj.sucursal || '').trim().toUpperCase();
+            return u === 'admin' || r.includes('administrador') || s === 'TODAS' || s === 'ALL' || userObj.accesoGlobalSucursales === true;
+        }
+
+        function obtenerSucursalAsignadaUsuario(userObj) {
+            if (!userObj) return null;
+            const rawId = userObj.sucursalId || userObj.sucursal_id || userObj.sucursal || userObj.sucursalNombre || '';
+            if (!rawId || ['TODAS', 'ALL'].includes(String(rawId).trim().toUpperCase())) {
+                return null;
+            }
+            const found = sucursalesDB.find(s =>
+                String(s.id).toLowerCase() === String(rawId).toLowerCase() ||
+                String(s.clave || '').toLowerCase() === String(rawId).toLowerCase() ||
+                String(s.nombre || '').toLowerCase() === String(rawId).toLowerCase()
+            );
+            return found ? found.id : null;
+        }
+
+        let storedUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+        let usersDB = (storedUsers && storedUsers.length > 0) ? storedUsers : [defaultAdmin];
+        let sucursalesDB = JSON.parse(localStorage.getItem('opti_betesda_sucursales')) || [];
+        let rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+        let sucursalActivaId = sessionStorage.getItem('opti_betesda_sucursal_activa') || localStorage.getItem('opti_betesda_sucursal_activa') || 'SUC-001';
+        let currentUser = null;
+        let sidebarTimer = null;
+        let itemsNuevaRuta = [];
+
+        window.onload = function() {
+            inicializarBaseSucursales();
+            checkSession();
+            renderSelectorSucursalHeader();
+            renderFiltrosSucursalRuta();
+            detectarTrabajosRXPendientes(false);
+            actualizarEstadisticasRutas();
+            renderRutas();
+        };
+
+        function inicializarBaseSucursales() {
+            const eliminadas = new Set((JSON.parse(localStorage.getItem('opti_betesda_sucursales_eliminadas')) || []).map(x => String(x).trim().toUpperCase()));
+            const rawSuc = JSON.parse(localStorage.getItem('opti_betesda_sucursales'));
+            if (!Array.isArray(rawSuc) || rawSuc.length === 0) {
+                sucursalesDB = [{ ...MATRIZ_DEFAULT }];
+            } else {
+                sucursalesDB = rawSuc.filter(s => {
+                    if (!s) return false;
+                    const idU = String(s.id || '').trim().toUpperCase();
+                    const clU = String(s.clave || '').trim().toUpperCase();
+                    return idU === 'SUC-001' || (!eliminadas.has(idU) && (!clU || !eliminadas.has(clU)));
+                });
+                if (!sucursalesDB.some(s => s.id === 'SUC-001')) {
+                    sucursalesDB.unshift({ ...MATRIZ_DEFAULT });
+                }
+            }
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+
+            if (!sucursalesDB.some(s => s.id === sucursalActivaId)) {
+                sucursalActivaId = 'SUC-001';
+                sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            }
+        }
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+                if (Array.isArray(freshUsers) && freshUsers.length > 0) {
+                    usersDB = freshUsers;
+                    const synced = usersDB.find(u => String(u.user || '').toLowerCase() === String(currentUser.user || '').toLowerCase());
+                    if (synced) {
+                        currentUser = { ...currentUser, ...synced };
+                        sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                    }
+                }
+
+                const currentPage = window.location.pathname.split('/').pop() || 'rutas.html';
+                if (!esUsuarioAdministrador(currentUser) && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                if (!esUsuarioAdministrador(currentUser)) {
+                    const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                    if (asignadaId) {
+                        sucursalActivaId = asignadaId;
+                        sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                        localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                    }
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+
+                aplicarPermisosMenu();
+                startSidebarTimer();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function aplicarPermisosMenu() {
+            const sidebarLinks = document.querySelectorAll('#sidebar a[data-module]');
+            const esAdmin = esUsuarioAdministrador(currentUser);
+            sidebarLinks.forEach(link => {
+                const moduleName = link.getAttribute('data-module');
+                if (esAdmin || (currentUser.modulos && currentUser.modulos.includes(moduleName))) {
+                    link.style.display = '';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        }
+
+        function handleLogin() {
+            const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+            if (Array.isArray(freshUsers) && freshUsers.length > 0) usersDB = freshUsers;
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            let found = usersDB.find(item => item.user.toLowerCase() === u.toLowerCase() && item.pass === p);
+
+            if (!found && u.toLowerCase() === 'admin' && p === 'Alex150515') {
+                found = defaultAdmin;
+            }
+
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                if (!esUsuarioAdministrador(currentUser)) {
+                    const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                    if (asignadaId) {
+                        sucursalActivaId = asignadaId;
+                        sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                        localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                    }
+                }
+                checkSession();
+                renderSelectorSucursalHeader();
+                detectarTrabajosRXPendientes(false);
+                renderRutas();
+                showToast("Bienvenido", "success");
+            } else {
+                showToast("Usuario o contraseña incorrectos", "error");
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('opti_betesda_session');
+            checkSession();
+        }
+
+        function renderSelectorSucursalHeader() {
+            const select = document.getElementById('headerSucursalSelect');
+            const badge = document.getElementById('sucursalLockedBadge');
+            if (!select) return;
+
+            const esAdmin = !currentUser || esUsuarioAdministrador(currentUser);
+            if (!esAdmin) {
+                const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                if (asignadaId) sucursalActivaId = asignadaId;
+            }
+
+            const disponibles = esAdmin
+                ? sucursalesDB.filter(s => s.estatus === 'Activa' || s.id === sucursalActivaId)
+                : sucursalesDB.filter(s => s.id === sucursalActivaId);
+
+            select.innerHTML = '';
+            (disponibles.length > 0 ? disponibles : sucursalesDB.filter(s => s.id === sucursalActivaId)).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.clave} - ${s.nombre}`;
+                if (s.id === sucursalActivaId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.disabled = !esAdmin;
+            select.classList.toggle('opacity-90', !esAdmin);
+            select.classList.toggle('cursor-not-allowed', !esAdmin);
+            select.classList.toggle('cursor-pointer', esAdmin);
+            if (badge) {
+                badge.textContent = !esAdmin ? '· Asignada' : '';
+                badge.classList.toggle('hidden', esAdmin);
+            }
+        }
+
+        function cambiarSucursalActiva(nuevaId) {
+            if (!esUsuarioAdministrador(currentUser)) {
+                renderSelectorSucursalHeader();
+                showToast("Tu usuario tiene sucursal asignada; no puedes cambiar de sucursal.", "error");
+                return;
+            }
+            sucursalActivaId = nuevaId;
+            sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            const suc = sucursalesDB.find(s => s.id === nuevaId);
+            detectarTrabajosRXPendientes(false);
+            actualizarEstadisticasRutas();
+            renderRutas();
+            if (suc) {
+                showToast(`Operando ahora en: ${suc.nombre} (${suc.clave})`, "success");
+            }
+        }
+
+        function renderFiltrosSucursalRuta() {
+            const select = document.getElementById('filtroSucursalRuta');
+            if (!select) return;
+            const prevVal = select.value;
+            select.innerHTML = '<option value="TODAS">Origen / Destino...</option>';
+            sucursalesDB.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.clave} - ${s.nombre}`;
+                select.appendChild(opt);
+            });
+            if (Array.from(select.options).some(o => o.value === prevVal)) {
+                select.value = prevVal;
+            }
+        }
+
+        function detectarTrabajosRXPendientes(notificar = true) {
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const ventas = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+            const panel = document.getElementById('panelAlertasRX');
+            const listaDiv = document.getElementById('listaAlertasRX');
+            const contador = document.getElementById('contadorAlertasRX');
+            if (!panel || !listaDiv) return;
+
+            const foliosYaEnRuta = new Set();
+            rutasDB.forEach(r => {
+                if (r.estatus !== 'Cancelada') {
+                    (r.items || []).forEach(it => {
+                        if (it.codigo) foliosYaEnRuta.add(String(it.codigo).toUpperCase());
+                    });
+                }
+            });
+
+            const pendientes = ventas.filter(v => {
+                if (!v || v.cancelada) return false;
+                const sucVenta = v.sucursalId || 'SUC-001';
+                if (sucVenta === 'SUC-001') return false;
+                const folio = String(v.folio || v.nota || '').toUpperCase();
+                if (!folio || foliosYaEnRuta.has(folio)) return false;
+
+                const tieneMica = (v.items || []).some(i =>
+                    (i.tipo || '').toLowerCase().includes('mica') ||
+                    (i.categoria || '').toLowerCase().includes('mica') ||
+                    (i.nombre || i.descripcion || '').toLowerCase().includes('mica') ||
+                    (i.nombre || i.descripcion || '').toLowerCase().includes('monofocal') ||
+                    (i.nombre || i.descripcion || '').toLowerCase().includes('bifocal') ||
+                    (i.nombre || i.descripcion || '').toLowerCase().includes('progresivo')
+                ) || Boolean(v.rx || v.receta || v.graduacion);
+
+                return tieneMica;
+            });
+
+            if (pendientes.length === 0) {
+                panel.classList.add('hidden');
+                if (notificar) showToast("No hay notas RX pendientes de envío a Taller Matriz.", "info");
+                return;
+            }
+
+            panel.classList.remove('hidden');
+            contador.textContent = `${pendientes.length} nota(s) pendiente(s)`;
+            listaDiv.innerHTML = '';
+
+            pendientes.forEach(v => {
+                const folio = v.folio || v.nota || 'S/F';
+                const sucOrigen = sucursalesDB.find(s => s.id === v.sucursalId) || { id: v.sucursalId, nombre: v.sucursalNombre || 'Sucursal' };
+                const cliente = v.cliente || v.paciente || 'Cliente General';
+
+                listaDiv.innerHTML += `
+                    <div class="bg-white rounded-2xl p-3 border border-amber-300 shadow-sm flex items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-mono text-[11px] font-extrabold text-betesda-green">${folio}</span>
+                                <span class="text-[10px] bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full">${sucOrigen.nombre} → Matriz</span>
+                            </div>
+                            <div class="text-xs font-bold text-betesda-darkgreen truncate mt-0.5">${cliente}</div>
+                            <div class="text-[10px] text-slate-400">${v.fecha || ''}</div>
+                        </div>
+                        <button onclick="despacharNotaRXAMatriz('${folio}', '${sucOrigen.id}')" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-3 py-2 rounded-xl text-[11px] shrink-0 shadow transition flex items-center gap-1">
+                            <i class="fa-solid fa-paper-plane text-betesda-yellow"></i> Crear Ruta
+                        </button>
+                    </div>
+                `;
+            });
+
+            if (notificar) {
+                showToast(`Se detectaron ${pendientes.length} trabajos RX listos para ruta a Matriz.`, "success");
+            }
+        }
+
+        function sincronizarPendientesTaller() {
+            detectarTrabajosRXPendientes(true);
+        }
+
+        function despacharNotaRXAMatriz(folio, origenId) {
+            const ventas = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+            const venta = ventas.find(v => String(v.folio || v.nota || '').toUpperCase() === String(folio).toUpperCase());
+
+            abrirModalNuevaRuta();
+            document.getElementById('rutaTipo').value = 'Envío RX a Taller Matriz';
+            document.getElementById('rutaOrigen').value = origenId;
+            document.getElementById('rutaDestino').value = 'SUC-001';
+            document.getElementById('rutaPrioridad').value = 'Urgente';
+            document.getElementById('rutaMoverInventario').checked = false;
+
+            const cliente = venta ? (venta.cliente || venta.paciente || 'Cliente') : 'Paciente';
+            itemsNuevaRuta = [{
+                codigo: folio,
+                descripcion: `Trabajo RX / Mica - ${cliente}`,
+                cantidad: 1,
+                tipo: 'Trabajo RX'
+            }];
+            renderTablaItemsNuevaRuta();
+        }
+
+        function actualizarEstadisticasRutas() {
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const preparando = rutasDB.filter(r => r.estatus === 'Preparando').length;
+            const enRuta = rutasDB.filter(r => r.estatus === 'En Ruta').length;
+            const trabajosTaller = rutasDB.filter(r => r.tipo === 'Envío RX a Taller Matriz' && r.estatus !== 'Cancelada').length;
+            const entregados = rutasDB.filter(r => r.estatus === 'Recibido').length;
+
+            document.getElementById('statPreparacion').textContent = preparando;
+            document.getElementById('statEnRuta').textContent = enRuta;
+            document.getElementById('statTrabajosTaller').textContent = trabajosTaller;
+            document.getElementById('statEntregados').textContent = entregados;
+        }
+
+        function renderRutas() {
+            inicializarBaseSucursales();
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const grid = document.getElementById('gridRutas');
+            if (!grid) return;
+
+            const query = (document.getElementById('filtroBusquedaRuta')?.value || '').toLowerCase().trim();
+            const tipoFiltro = document.getElementById('filtroTipoRuta')?.value || 'TODOS';
+            const estatusFiltro = document.getElementById('filtroEstatusRuta')?.value || 'TODOS';
+            const sucFiltro = document.getElementById('filtroSucursalRuta')?.value || 'TODAS';
+
+            const esAdmin = !currentUser || esUsuarioAdministrador(currentUser);
+
+            let lista = rutasDB.filter(r => {
+                if (!esAdmin && r.origenId !== sucursalActivaId && r.destinoId !== sucursalActivaId) {
+                    return false;
+                }
+                if (tipoFiltro !== 'TODOS' && r.tipo !== tipoFiltro) return false;
+                if (estatusFiltro !== 'TODOS' && r.estatus !== estatusFiltro) return false;
+                if (sucFiltro !== 'TODAS' && r.origenId !== sucFiltro && r.destinoId !== sucFiltro) return false;
+
+                if (query) {
+                    const matchFolio = (r.folio || '').toLowerCase().includes(query);
+                    const matchMensajero = (r.mensajero || '').toLowerCase().includes(query);
+                    const matchNotas = (r.notas || '').toLowerCase().includes(query);
+                    const matchItems = (r.items || []).some(it =>
+                        (it.codigo || '').toLowerCase().includes(query) ||
+                        (it.descripcion || '').toLowerCase().includes(query)
+                    );
+                    return matchFolio || matchMensajero || matchNotas || matchItems;
+                }
+                return true;
+            });
+
+            if (lista.length === 0) {
+                grid.innerHTML = `<div class="col-span-full p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-300">No hay órdenes de ruta registradas con los filtros actuales.</div>`;
+                return;
+            }
+
+            grid.innerHTML = '';
+
+            lista.slice().reverse().forEach(r => {
+                const sucOrigActual = sucursalesDB.find(s => s.id === r.origenId);
+                const sucDestActual = sucursalesDB.find(s => s.id === r.destinoId);
+                const nombreOrig = sucOrigActual ? sucOrigActual.nombre : r.origenNombre;
+                const nombreDest = sucDestActual ? sucDestActual.nombre : r.destinoNombre;
+
+                let badgeEstatus = '';
+                if (r.estatus === 'Preparando') {
+                    badgeEstatus = `<span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200">Preparando</span>`;
+                } else if (r.estatus === 'En Ruta') {
+                    badgeEstatus = `<span class="bg-sky-100 text-sky-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-sky-200 flex items-center gap-1"><i class="fa-solid fa-truck-fast"></i> En Ruta</span>`;
+                } else if (r.estatus === 'Recibido') {
+                    badgeEstatus = `<span class="bg-emerald-100 text-betesda-green text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200"><i class="fa-solid fa-check"></i> Recibido</span>`;
+                } else {
+                    badgeEstatus = `<span class="bg-rose-100 text-rose-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-rose-200">Cancelada</span>`;
+                }
+
+                const badgePrioridad = r.prioridad === 'Urgente'
+                    ? `<span class="bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">URGENTE</span>`
+                    : '';
+
+                const itemsHtml = (r.items || []).map(it => `
+                    <div class="flex justify-between items-center text-[11px] py-1 border-b border-slate-100 last:border-b-0">
+                        <div class="truncate pr-2">
+                            <span class="font-mono font-bold text-betesda-green">${it.codigo || 'S/C'}</span>
+                            <span class="text-slate-700"> - ${it.descripcion}</span>
+                        </div>
+                        <span class="font-mono font-extrabold text-betesda-darkgreen shrink-0">x${it.cantidad}</span>
+                    </div>
+                `).join('');
+
+                let accionesBtn = '';
+                if (r.estatus === 'Preparando') {
+                    accionesBtn = `
+                        <button onclick="cambiarEstatusRuta('${r.id}', 'En Ruta')" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition flex items-center gap-1">
+                            <i class="fa-solid fa-truck"></i> Despachar Ruta
+                        </button>
+                    `;
+                } else if (r.estatus === 'En Ruta') {
+                    accionesBtn = `
+                        <button onclick="confirmarRecepcionRuta('${r.id}')" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow transition flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-betesda-yellow"></i> Confirmar Recepción
+                        </button>
+                    `;
+                }
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-3xl border-2 ${r.estatus === 'En Ruta' ? 'border-sky-400' : 'border-betesda-lightgreen'} p-4 flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md transition">
+                        <div class="space-y-2.5">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-mono text-xs font-extrabold text-betesda-green bg-betesda-softgreen px-2 py-0.5 rounded-lg border border-betesda-lightgreen">${r.folio}</span>
+                                        ${badgeEstatus}
+                                        ${badgePrioridad}
+                                    </div>
+                                    <div class="text-xs font-extrabold text-betesda-darkgreen mt-1.5">${r.tipo}</div>
+                                </div>
+                                <button onclick="imprimirManifiestoRuta('${r.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 rounded-xl text-xs border border-slate-200" title="Imprimir pase de ruta 80mm">
+                                    <i class="fa-solid fa-print"></i>
+                                </button>
+                            </div>
+
+                            <!-- ORIGEN -> DESTINO -->
+                            <div class="bg-betesda-softgreen p-2.5 rounded-2xl border border-betesda-lightgreen flex items-center justify-between text-xs font-extrabold text-betesda-darkgreen">
+                                <span class="truncate max-w-[42%]"><i class="fa-solid fa-store text-betesda-green mr-1"></i>${nombreOrig}</span>
+                                <i class="fa-solid fa-arrow-right-long text-betesda-gold"></i>
+                                <span class="truncate max-w-[42%] text-right"><i class="fa-solid fa-location-dot text-betesda-green mr-1"></i>${nombreDest}</span>
+                            </div>
+
+                            <!-- DETALLES DE TRASLADO -->
+                            <div class="text-[11px] text-slate-600 space-y-1">
+                                <div><i class="fa-solid fa-user-check text-betesda-green w-4"></i> Mensajero: <strong>${r.mensajero}</strong></div>
+                                <div><i class="fa-solid fa-clock text-slate-400 w-4"></i> Salida: <span>${r.fechaCreacion}</span></div>
+                                ${r.fechaRecepcion ? `<div class="text-emerald-700"><i class="fa-solid fa-check-double w-4"></i> Recibido: <strong>${r.fechaRecepcion}</strong> (${r.recibidoPor || 'Sistema'})</div>` : ''}
+                                ${r.notas ? `<div class="text-slate-500 italic"><i class="fa-solid fa-note-sticky w-4"></i> "${r.notas}"</div>` : ''}
+                            </div>
+
+                            <!-- CONTENIDO DEL PAQUETE -->
+                            <div class="bg-slate-50 rounded-2xl p-2.5 border border-slate-200 max-h-36 overflow-y-auto">
+                                <div class="text-[10px] font-extrabold text-slate-400 uppercase mb-1">Contenido (${(r.items || []).length} partida/s):</div>
+                                ${itemsHtml}
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                            <div>
+                                ${r.estatus !== 'Recibido' && r.estatus !== 'Cancelada' ? `
+                                    <button onclick="cambiarEstatusRuta('${r.id}', 'Cancelada')" class="text-[11px] font-bold text-rose-600 hover:underline">Cancelar</button>
+                                ` : `<span class="text-[10px] text-slate-400">Creada por: ${r.creadoPor || 'Admin'}</span>`}
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${accionesBtn}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function abrirModalNuevaRuta() {
+            inicializarBaseSucursales();
+            itemsNuevaRuta = [];
+            renderTablaItemsNuevaRuta();
+
+            const selOrigen = document.getElementById('rutaOrigen');
+            const selDestino = document.getElementById('rutaDestino');
+            selOrigen.innerHTML = '';
+            selDestino.innerHTML = '';
+
+            const esAdmin = !currentUser || esUsuarioAdministrador(currentUser);
+            const origenesDisponibles = esAdmin
+                ? sucursalesDB.filter(s => s.estatus === 'Activa' || s.id === sucursalActivaId)
+                : sucursalesDB.filter(s => s.id === sucursalActivaId);
+
+            (origenesDisponibles.length > 0 ? origenesDisponibles : sucursalesDB.filter(s => s.id === sucursalActivaId)).forEach(s => {
+                const optO = document.createElement('option');
+                optO.value = s.id;
+                optO.textContent = `${s.clave} - ${s.nombre}`;
+                if (s.id === sucursalActivaId) optO.selected = true;
+                selOrigen.appendChild(optO);
+            });
+            selOrigen.disabled = !esAdmin;
+
+            sucursalesDB.filter(s => s.estatus === 'Activa').forEach(s => {
+                const optD = document.createElement('option');
+                optD.value = s.id;
+                optD.textContent = `${s.clave} - ${s.nombre}`;
+                if (s.id === 'SUC-001' && sucursalActivaId !== 'SUC-001') optD.selected = true;
+                selDestino.appendChild(optD);
+            });
+
+            document.getElementById('rutaMensajero').value = '';
+            document.getElementById('rutaNotas').value = '';
+            document.getElementById('rutaPrioridad').value = 'Normal';
+            document.getElementById('rutaEstatusInicial').value = 'En Ruta';
+
+            ajustarPorTipoRuta();
+            cargarOpcionesArticulosRuta();
+            document.getElementById('modalNuevaRuta').classList.remove('hidden');
+        }
+
+        function cerrarModalNuevaRuta() {
+            document.getElementById('modalNuevaRuta').classList.add('hidden');
+        }
+
+        function ajustarPorTipoRuta() {
+            const tipo = document.getElementById('rutaTipo').value;
+            const chkMover = document.getElementById('rutaMoverInventario');
+            if (tipo === 'Envío RX a Taller Matriz') {
+                document.getElementById('rutaDestino').value = 'SUC-001';
+                chkMover.checked = false;
+            } else if (tipo === 'Traspaso de Inventario') {
+                chkMover.checked = true;
+            } else {
+                chkMover.checked = false;
+            }
+        }
+
+        function cargarOpcionesArticulosRuta() {
+            const origenId = document.getElementById('rutaOrigen').value;
+            const select = document.getElementById('selectItemExistenciaRuta');
+            if (!select) return;
+
+            const existencias = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || [];
+            const ventas = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+
+            select.innerHTML = '<option value="">-- Seleccionar producto o nota RX de origen --</option>';
+
+            const notasOrigen = ventas.filter(v => (v.sucursalId || 'SUC-001') === origenId && !v.cancelada).slice(-25).reverse();
+            if (notasOrigen.length > 0) {
+                const grpNotas = document.createElement('optgroup');
+                grpNotas.label = 'Notas de Venta / Trabajos RX';
+                notasOrigen.forEach(v => {
+                    const folio = v.folio || v.nota || 'NOTA';
+                    const cliente = v.cliente || v.paciente || 'Cliente';
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify({
+                        codigo: folio,
+                        descripcion: `Nota RX - ${cliente}`,
+                        tipo: 'Trabajo RX',
+                        maxCant: 1
+                    });
+                    opt.textContent = `[RX] ${folio} - ${cliente}`;
+                    grpNotas.appendChild(opt);
+                });
+                select.appendChild(grpNotas);
+            }
+
+            const stockOrigen = existencias.filter(e => (e.sucursalId || 'SUC-001') === origenId && (parseInt(e.cantidad) || 0) > 0);
+            if (stockOrigen.length > 0) {
+                const grpProd = document.createElement('optgroup');
+                grpProd.label = 'Inventario Disponible en Sucursal Origen';
+                stockOrigen.forEach(p => {
+                    const marca = p.marca || p.marcaNombre || '';
+                    const modelo = p.modelo || p.modeloNombre || p.nombre || p.descripcion || '';
+                    const codigo = p.codigo || p.barcode || p.sku || `${marca || 'PROD'}-${modelo || 'ITEM'}`;
+                    const desc = `${marca} ${modelo}`.trim() || codigo;
+                    const disp = parseInt(p.cantidad) || 0;
+                    const opt = document.createElement('option');
+                    opt.value = JSON.stringify({
+                        codigo,
+                        marca,
+                        modelo,
+                        descripcion: desc,
+                        tipo: 'Producto',
+                        maxCant: disp
+                    });
+                    opt.textContent = `[STOCK: ${disp}] ${codigo} - ${desc}`;
+                    grpProd.appendChild(opt);
+                });
+                select.appendChild(grpProd);
+            }
+        }
+
+        function agregarItemDesdeSelector() {
+            const select = document.getElementById('selectItemExistenciaRuta');
+            const cant = parseInt(document.getElementById('inputCantItemRuta').value) || 1;
+            if (!select.value) {
+                showToast("Selecciona un producto o nota de la lista", "error");
+                return;
+            }
+            const data = JSON.parse(select.value);
+            if (data.tipo === 'Producto' && data.maxCant && cant > data.maxCant) {
+                showToast(`Stock máximo disponible en origen: ${data.maxCant} pzs`, "error");
+                return;
+            }
+
+            itemsNuevaRuta.push({
+                codigo: data.codigo,
+                marca: data.marca || '',
+                modelo: data.modelo || '',
+                descripcion: data.descripcion,
+                cantidad: cant,
+                tipo: data.tipo
+            });
+            renderTablaItemsNuevaRuta();
+            select.value = '';
+            document.getElementById('inputCantItemRuta').value = 1;
+        }
+
+        function agregarItemManualRuta() {
+            const codigo = document.getElementById('manualCodigoRuta').value.trim().toUpperCase() || 'PAQ';
+            const desc = document.getElementById('manualDescRuta').value.trim();
+            const cant = parseInt(document.getElementById('manualCantRuta').value) || 1;
+
+            if (!desc) {
+                showToast("Escribe la descripción del paquete o trabajo", "error");
+                return;
+            }
+
+            itemsNuevaRuta.push({
+                codigo,
+                descripcion: desc,
+                cantidad: cant,
+                tipo: 'Manual'
+            });
+            renderTablaItemsNuevaRuta();
+            document.getElementById('manualCodigoRuta').value = '';
+            document.getElementById('manualDescRuta').value = '';
+            document.getElementById('manualCantRuta').value = 1;
+        }
+
+        function quitarItemNuevaRuta(idx) {
+            itemsNuevaRuta.splice(idx, 1);
+            renderTablaItemsNuevaRuta();
+        }
+
+        function renderTablaItemsNuevaRuta() {
+            const tbody = document.getElementById('tbodyItemsNuevaRuta');
+            if (!tbody) return;
+
+            if (itemsNuevaRuta.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">Aún no hay paquetes o productos en esta orden de ruta.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            itemsNuevaRuta.forEach((it, idx) => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-2 font-mono font-bold text-betesda-green">${it.codigo}</td>
+                        <td class="p-2 font-medium text-slate-700">${it.descripcion}</td>
+                        <td class="p-2 text-center font-mono font-extrabold">${it.cantidad}</td>
+                        <td class="p-2 text-center"><span class="bg-slate-100 px-2 py-0.5 rounded-full text-[10px] font-bold">${it.tipo}</span></td>
+                        <td class="p-2 text-center">
+                            <button type="button" onclick="quitarItemNuevaRuta(${idx})" class="text-rose-600 hover:text-rose-800 font-bold"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function guardarOrdenRuta() {
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const tipo = document.getElementById('rutaTipo').value;
+            const origenId = document.getElementById('rutaOrigen').value;
+            const destinoId = document.getElementById('rutaDestino').value;
+            const mensajero = document.getElementById('rutaMensajero').value.trim();
+            const prioridad = document.getElementById('rutaPrioridad').value;
+            const estatus = document.getElementById('rutaEstatusInicial').value;
+            const notas = document.getElementById('rutaNotas').value.trim();
+            const esTraspasoStock = tipo === 'Traspaso de Inventario' && document.getElementById('rutaMoverInventario').checked;
+
+            if (!origenId || !destinoId || !mensajero) {
+                showToast("Completa origen, destino y mensajero", "error");
+                return;
+            }
+            if (origenId === destinoId) {
+                showToast("La sucursal de origen y destino deben ser distintas", "error");
+                return;
+            }
+            if (itemsNuevaRuta.length === 0) {
+                showToast("Agrega al menos un paquete, nota o producto a la ruta", "error");
+                return;
+            }
+
+            const sucOrigen = sucursalesDB.find(s => s.id === origenId) || { id: origenId, nombre: origenId };
+            const sucDestino = sucursalesDB.find(s => s.id === destinoId) || { id: destinoId, nombre: destinoId };
+            const folio = `RUT-${String(rutasDB.length + 1).padStart(4, '0')}`;
+            const ahora = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+
+            const nuevaOrden = {
+                id: `RUTA_${Date.now()}`,
+                folio,
+                tipo,
+                origenId: sucOrigen.id,
+                origenNombre: sucOrigen.nombre,
+                destinoId: sucDestino.id,
+                destinoNombre: sucDestino.nombre,
+                mensajero,
+                prioridad,
+                estatus,
+                notas,
+                moverInventario: esTraspasoStock,
+                items: [...itemsNuevaRuta],
+                fechaCreacion: ahora,
+                creadoPor: currentUser ? currentUser.user : 'Admin',
+                fechaRecepcion: null,
+                recibidoPor: null
+            };
+
+            rutasDB.push(nuevaOrden);
+            localStorage.setItem('opti_betesda_rutas', JSON.stringify(rutasDB));
+
+            registrarAuditoriaRuta(`Creó orden de ruta ${folio} (${sucOrigen.nombre} -> ${sucDestino.nombre})`);
+            cerrarModalNuevaRuta();
+            detectarTrabajosRXPendientes(false);
+            actualizarEstadisticasRutas();
+            renderRutas();
+            showToast(`Orden de ruta ${folio} registrada correctamente`, "success");
+        }
+
+        function cambiarEstatusRuta(id, nuevoEstatus) {
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const ruta = rutasDB.find(r => r.id === id);
+            if (!ruta) return;
+            ruta.estatus = nuevoEstatus;
+            localStorage.setItem('opti_betesda_rutas', JSON.stringify(rutasDB));
+            registrarAuditoriaRuta(`Actualizó ruta ${ruta.folio} a estatus: ${nuevoEstatus}`);
+            detectarTrabajosRXPendientes(false);
+            actualizarEstadisticasRutas();
+            renderRutas();
+            showToast(`Ruta ${ruta.folio} marcada como ${nuevoEstatus}`, "info");
+        }
+
+        function coincideItemExistencia(ex, it) {
+            const codEx = String(ex.codigo || ex.barcode || ex.sku || '').trim().toUpperCase();
+            const codIt = String(it.codigo || '').trim().toUpperCase();
+            if (codEx && codIt && codEx === codIt) return true;
+
+            const marcaEx = String(ex.marca || ex.marcaNombre || '').trim().toLowerCase();
+            const modeloEx = String(ex.modelo || ex.modeloNombre || ex.nombre || '').trim().toLowerCase();
+            const marcaIt = String(it.marca || '').trim().toLowerCase();
+            const modeloIt = String(it.modelo || '').trim().toLowerCase();
+
+            if (marcaEx && modeloEx && marcaIt && modeloIt) {
+                return marcaEx === marcaIt && modeloEx === modeloIt;
+            }
+            return false;
+        }
+
+        function confirmarRecepcionRuta(id) {
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+            const ruta = rutasDB.find(r => r.id === id);
+            if (!ruta || ruta.estatus === 'Recibido') return;
+
+            if (!confirm(`¿Confirmar recepción física de la orden ${ruta.folio} en ${ruta.destinoNombre}?`)) return;
+
+            if (ruta.moverInventario && ruta.tipo === 'Traspaso de Inventario') {
+                let existencias = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || [];
+                (ruta.items || []).forEach(it => {
+                    if (it.tipo !== 'Producto') return;
+                    const cantMover = parseInt(it.cantidad) || 0;
+                    if (cantMover <= 0) return;
+
+                    const idxOrigen = existencias.findIndex(e =>
+                        (e.sucursalId || 'SUC-001') === ruta.origenId && coincideItemExistencia(e, it)
+                    );
+
+                    if (idxOrigen !== -1) {
+                        const actualOrig = parseInt(existencias[idxOrigen].cantidad) || 0;
+                        existencias[idxOrigen].cantidad = Math.max(0, actualOrig - cantMover);
+
+                        const idxDestino = existencias.findIndex(e =>
+                            (e.sucursalId || 'SUC-001') === ruta.destinoId && coincideItemExistencia(e, it)
+                        );
+
+                        if (idxDestino !== -1) {
+                            existencias[idxDestino].cantidad = (parseInt(existencias[idxDestino].cantidad) || 0) + cantMover;
+                        } else {
+                            existencias.push({
+                                ...existencias[idxOrigen],
+                                id: Date.now() + Math.random(),
+                                sucursalId: ruta.destinoId,
+                                sucursalNombre: ruta.destinoNombre,
+                                cantidad: cantMover
+                            });
+                        }
+                    }
+                });
+                localStorage.setItem('opti_betesda_existencias', JSON.stringify(existencias));
+            }
+
+            ruta.estatus = 'Recibido';
+            ruta.fechaRecepcion = new Date().toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' });
+            ruta.recibidoPor = currentUser ? currentUser.user : 'Admin';
+
+            localStorage.setItem('opti_betesda_rutas', JSON.stringify(rutasDB));
+            registrarAuditoriaRuta(`Confirmó recepción de ruta ${ruta.folio} en ${ruta.destinoNombre}`);
+            actualizarEstadisticasRutas();
+            renderRutas();
+            showToast(`Recepción de ${ruta.folio} confirmada con éxito`, "success");
+        }
+
+        function imprimirManifiestoRuta(id) {
+            const r = rutasDB.find(item => item.id === id);
+            if (!r) return;
+
+            const area = document.getElementById('printManifiestoArea');
+            const itemsRows = (r.items || []).map(it =>
+                `<div>${it.codigo} x${it.cantidad} - ${it.descripcion}</div>`
+            ).join('');
+
+            area.innerHTML = `
+                <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:6px; margin-bottom:6px;">
+                    <div style="font-weight:900; font-size:13px;">ÓPTICA BETESDA</div>
+                    <div style="font-weight:700;">PASE DE RUTA Y TRASLADO</div>
+                    <div style="font-size:12px; font-weight:900; margin-top:2px;">${r.folio}</div>
+                </div>
+                <div><strong>TIPO:</strong> ${r.tipo}</div>
+                <div><strong>ORIGEN:</strong> ${r.origenNombre}</div>
+                <div><strong>DESTINO:</strong> ${r.destinoNombre}</div>
+                <div><strong>MENSAJERO:</strong> ${r.mensajero}</div>
+                <div><strong>SALIDA:</strong> ${r.fechaCreacion}</div>
+                <div><strong>PRIORIDAD:</strong> ${r.prioridad}</div>
+                <div style="border-top:1px dashed #000; border-bottom:1px dashed #000; padding:6px 0; margin:6px 0;">
+                    <div style="font-weight:700; margin-bottom:3px;">DETALLE DE PAQUETES:</div>
+                    ${itemsRows}
+                </div>
+                ${r.notas ? `<div style="margin-bottom:8px;"><strong>OBS:</strong> ${r.notas}</div>` : ''}
+                <div style="margin-top:22px; text-align:center;">
+                    <div>__________________________</div>
+                    <div>Firma Entrega / Recepción</div>
+                </div>
+            `;
+
+            area.classList.remove('hidden');
+            window.print();
+            area.classList.add('hidden');
+        }
+
+        function registrarAuditoriaRuta(detalle) {
+            const auditoria = JSON.parse(localStorage.getItem('opti_betesda_auditoria')) || [];
+            auditoria.push({
+                fecha: new Date().toLocaleString('es-MX'),
+                usuario: currentUser ? currentUser.user : 'Admin',
+                modulo: 'Rutas y Traslados',
+                accion: detalle
+            });
+            localStorage.setItem('opti_betesda_auditoria', JSON.stringify(auditoria));
+        }
+
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.remove('translate-y-0', 'opacity-100');
+                t.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

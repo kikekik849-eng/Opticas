@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Sucursales - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Módulo</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col min-h-screen hidden">
+        <!-- HEADER -->
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow sticky top-0 z-40">
+            <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[10px] text-betesda-lightgreen font-medium">Gestión de Sucursales, Taller Central y Asignación Operativa</p>
+                    </div>
+                </div>
+
+                <!-- SELECTOR DE SUCURSAL ACTIVA -->
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="bg-betesda-darkgreen/80 border border-betesda-yellow/50 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                        <i class="fa-solid fa-store text-betesda-yellow text-xs"></i>
+                        <span class="text-[10px] text-betesda-lightgreen font-bold uppercase hidden sm:inline">Sucursal Activa:</span>
+                        <select id="headerSucursalSelect" onchange="cambiarSucursalActiva(this.value)" class="bg-white text-betesda-darkgreen text-xs font-extrabold rounded-lg px-2.5 py-1 outline-none border border-betesda-yellow cursor-pointer">
+                        </select>
+                        <span id="sucursalLockedBadge" class="hidden text-[10px] font-extrabold text-betesda-yellow uppercase tracking-wide"></span>
+                    </div>
+
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-[1600px] w-full mx-auto">
+            <!-- SIDEBAR -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto z-30">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" data-module="index.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" data-module="inventario.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" data-module="ventas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" data-module="taller.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" data-module="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" data-module="existencias.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" data-module="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" data-module="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" data-module="servicios.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="sucursales.html" data-module="sucursales.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-store text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Sucursales</span>
+                </a>
+                <a href="rutas.html" data-module="rutas.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-route text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Rutas y Traslados</span>
+                </a>
+                <a href="loggin.html" data-module="loggin.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+                <a href="historial.html" data-module="historial.html" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-clock-rotate-left text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Historial / Auditoría</span>
+                </a>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto">
+                
+                <!-- BANNER INFORMATIVO DE REGLA OPERATIVA -->
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen text-betesda-green shrink-0">
+                            <i class="fa-solid fa-network-wired text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-extrabold text-betesda-darkgreen uppercase">Arquitectura Multi-Sucursal Óptica Betesda</h2>
+                            <p class="text-xs text-slate-600 mt-0.5">
+                                <span class="font-bold text-betesda-green">Catálogo Compartido:</span> Productos, micas y servicios son globales. 
+                                <span class="font-bold text-betesda-gold">Operación Independiente:</span> Cada sucursal mantiene su propio inventario, notas de venta, corte de caja y usuarios asignados; toda venta con mica se centraliza en el <strong>taller de Matriz</strong>.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap shrink-0 w-full lg:w-auto justify-end">
+                        <button onclick="sincronizarDatosMatriz()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2.5 rounded-2xl text-xs border border-slate-300 transition flex items-center gap-1.5" title="Vincular registros previos sin sucursal a Matriz">
+                            <i class="fa-solid fa-database text-betesda-green"></i> Vincular Historial a Matriz
+                        </button>
+                        <button onclick="restaurarSucursalesBase()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold px-3.5 py-2.5 rounded-2xl text-xs border border-amber-300 transition flex items-center gap-1.5" title="Limpiar sucursales residuales y dejar solo Matriz y sucursales vigentes">
+                            <i class="fa-solid fa-broom text-betesda-gold"></i> Limpiar Residuales
+                        </button>
+                        <button id="btnNuevaSucursal" onclick="abrirModalSucursal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-4 py-2.5 rounded-2xl text-xs shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus text-betesda-yellow"></i> Nueva Sucursal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TARJETAS DE RESUMEN -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Total Sucursales</span>
+                            <div id="statTotalSucursales" class="text-2xl font-extrabold text-betesda-darkgreen mt-1">1</div>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-betesda-softgreen text-betesda-green flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Sucursales Activas</span>
+                            <div id="statSucursalesActivas" class="text-2xl font-extrabold text-emerald-600 mt-1">1</div>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Catálogo Compartido</span>
+                            <div id="statCatalogoCompartido" class="text-2xl font-extrabold text-betesda-green mt-1">0</div>
+                            <span class="text-[10px] text-slate-400">Productos / Micas / Serv.</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-amber-50 text-betesda-gold flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-glasses"></i>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-3xl p-4 border border-betesda-lightgreen shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-400 uppercase">Operando en</span>
+                            <div id="statSucursalActualNombre" class="text-sm font-extrabold text-betesda-darkgreen mt-1 truncate max-w-[160px]">Matriz</div>
+                            <span id="statSucursalActualClave" class="text-[10px] font-mono text-betesda-green font-bold">SUC-001</span>
+                        </div>
+                        <div class="w-11 h-11 rounded-2xl bg-betesda-lightgreen text-betesda-darkgreen flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BARRA DE FILTROS PARA ADMINISTRADOR GENERAL -->
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen p-4 space-y-3">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <h3 class="text-xs font-extrabold text-betesda-green uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-filter text-betesda-yellow"></i> Directorio y Control de Sucursales
+                        </h3>
+                        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                            <div class="relative flex-grow md:w-64">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                                </span>
+                                <input type="text" id="filtroBusquedaSucursal" oninput="renderSucursales()" placeholder="Buscar por nombre, clave, dirección..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl pl-9 pr-3 py-2 text-xs font-medium outline-none focus:border-betesda-green">
+                            </div>
+                            <select id="filtroEstatusSucursal" onchange="renderSucursales()" class="bg-slate-50 border-2 border-betesda-lightgreen rounded-xl px-3 py-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                                <option value="TODAS">Todas las sucursales</option>
+                                <option value="Activa">Solo Activas</option>
+                                <option value="Inactiva">Solo Inactivas</option>
+                            </select>
+                            <select id="filtroSelectSucursalEspecifica" onchange="renderSucursales()" class="bg-slate-50 border-2 border-betesda-lightgreen rounded-xl px-3 py-2 text-xs font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                                <option value="TODAS">Filtrar por sucursal...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- GRID DE TARJETAS DE SUCURSALES -->
+                    <div id="gridSucursales" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL CREAR / EDITAR SUCURSAL -->
+    <div id="modalSucursal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <h3 id="tituloModalSucursal" class="text-base font-extrabold text-betesda-green uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-store text-betesda-yellow"></i> Registrar Nueva Sucursal
+                </h3>
+                <button onclick="cerrarModalSucursal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="formSucursal" onsubmit="event.preventDefault(); guardarSucursal();" class="space-y-4 text-xs">
+                <input type="hidden" id="sucursalIdEdit">
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Clave / Código *</label>
+                        <input type="text" id="sucursalClave" required placeholder="Ej. SUC-002" oninput="this.value = this.value.toUpperCase()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-mono font-bold outline-none focus:border-betesda-green">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Nombre de la Sucursal (Aparecerá en Ticket) *</label>
+                        <input type="text" id="sucursalNombre" required placeholder="Ej. Sucursal Centro / Sucursal Etla" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold outline-none focus:border-betesda-green">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Dirección Física Completa *</label>
+                    <input type="text" id="sucursalDireccion" required placeholder="Calle, Número, Colonia, C.P., Municipio/Ciudad" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Teléfono / WhatsApp *</label>
+                        <input type="text" id="sucursalTelefono" required placeholder="Ej. 951 501 0993" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Encargado / Responsable</label>
+                        <input type="text" id="sucursalEncargado" placeholder="Nombre del encargado" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Estatus Operativo</label>
+                        <select id="sucursalEstatus" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                            <option value="Activa">Activa</option>
+                            <option value="Inactiva">Inactiva</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Horario de Atención</label>
+                        <input type="text" id="sucursalHorario" placeholder="L-V 8:00 AM - 8:00 PM | S 8:00 AM - 2:00 PM" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-medium outline-none focus:border-betesda-green">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Serie / Prefijo de Notas (Opcional)</label>
+                        <input type="text" id="sucursalPrefijoNota" placeholder="Ej. S2-NOTA (o dejar NOTA)" oninput="this.value = this.value.toUpperCase()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-xl p-2.5 font-mono font-bold outline-none focus:border-betesda-green">
+                    </div>
+                </div>
+
+                <!-- VISTA PREVIA DE ENCABEZADO EN TICKET -->
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-dashed border-slate-300 space-y-1">
+                    <div class="text-[10px] font-extrabold text-slate-500 uppercase flex items-center gap-1">
+                        <i class="fa-solid fa-receipt text-betesda-green"></i> Vista Previa en Ticket Térmico:
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-xl p-3 text-center font-mono text-[11px] leading-tight text-black max-w-xs mx-auto shadow-inner">
+                        <div class="font-black text-xs">ÓPTICA BETESDA</div>
+                        <div class="font-bold text-[10px] bg-black text-white inline-block px-2 py-0.5 rounded my-1" id="previewTicketSucursal">SUCURSAL: MATRIZ</div>
+                        <div class="text-[9px]">R.F.C: MES050408U40</div>
+                        <div class="text-[9px]" id="previewTicketDireccion">PENSAMIENTOS 201, COL. REFORMA, OAXACA</div>
+                        <div class="text-[9px]" id="previewTicketTelefono">TEL. 9515010993</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-betesda-lightgreen">
+                    <button type="button" onclick="cerrarModalSucursal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl">Cancelar</button>
+                    <button type="submit" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk text-betesda-yellow"></i> Guardar Sucursal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ASIGNAR USUARIOS Y PERMISOS DE MÓDULOS A SUCURSAL -->
+    <div id="modalUsuariosSucursal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-6 w-full max-w-3xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-betesda-lightgreen pb-2">
+                <div>
+                    <h3 class="text-base font-extrabold text-betesda-green uppercase flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear text-betesda-yellow"></i> Usuarios y Permisos por Sucursal
+                    </h3>
+                    <p id="subtituloUsuariosSucursal" class="text-xs text-slate-500 font-semibold mt-0.5">Sucursal: -</p>
+                </div>
+                <button onclick="cerrarModalUsuariosSucursal()" class="text-slate-400 hover:text-slate-600 font-bold text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen text-xs text-betesda-darkgreen">
+                <i class="fa-solid fa-circle-info text-betesda-green"></i> Selecciona qué usuarios operan en esta sucursal y define exactamente qué módulos puede ver cada uno. El usuario <strong>Admin</strong> tiene acceso global a todas las sucursales.
+            </div>
+
+            <!-- ALTA RÁPIDA DE USUARIO PARA ESTA SUCURSAL -->
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
+                <div class="text-[11px] font-extrabold text-betesda-green uppercase flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-plus text-betesda-gold"></i> Crear Nuevo Usuario Directo para esta Sucursal
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                    <input type="text" id="nuevoUserNombre" placeholder="Nombre de usuario" class="bg-white border border-betesda-lightgreen rounded-xl p-2 font-medium outline-none focus:border-betesda-green">
+                    <input type="text" id="nuevoUserPass" placeholder="Contraseña" class="bg-white border border-betesda-lightgreen rounded-xl p-2 font-medium outline-none focus:border-betesda-green">
+                    <select id="nuevoUserRole" class="bg-white border border-betesda-lightgreen rounded-xl p-2 font-bold text-betesda-darkgreen outline-none focus:border-betesda-green">
+                        <option value="Cajero / Ventas">Cajero / Ventas</option>
+                        <option value="Encargado de Sucursal">Encargado de Sucursal</option>
+                        <option value="Optometrista">Optometrista</option>
+                        <option value="Taller / Laboratorio">Taller / Laboratorio</option>
+                        <option value="Almacenista">Almacenista</option>
+                    </select>
+                    <button type="button" onclick="crearUsuarioEnSucursal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold rounded-xl px-3 py-2 shadow transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-plus text-betesda-yellow"></i> Agregar Usuario
+                    </button>
+                </div>
+            </div>
+
+            <!-- LISTA DE USUARIOS Y CHECKBOXES DE MÓDULOS -->
+            <div id="listaUsuariosPermisosContainer" class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-betesda-lightgreen">
+                <button type="button" onclick="cerrarModalUsuariosSucursal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs">Cerrar</button>
+                <button type="button" onclick="guardarAsignacionUsuariosSucursal()" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow flex items-center gap-1.5">
+                    <i class="fa-solid fa-check text-betesda-yellow"></i> Guardar Asignaciones y Permisos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-betesda-darkgreen text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2 transition-all transform translate-y-24 opacity-0 z-50 text-xs border-2 border-betesda-yellow">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-betesda-yellow"></i>
+        <span id="toastMessage" class="font-bold"></span>
+    </div>
+
+    <script>
+        const ALL_MODULES = [
+            { id: 'index.html', label: 'Registro de Producto' },
+            { id: 'inventario.html', label: 'Registro de Factura' },
+            { id: 'ventas.html', label: 'Punto de Venta / RX' },
+            { id: 'taller.html', label: 'Módulo de Taller' },
+            { id: 'etiquetado.html', label: 'Etiquetado Rápido' },
+            { id: 'existencias.html', label: 'Existencias / Inventario' },
+            { id: 'entrada_directa.html', label: 'Entrada / Ajustes' },
+            { id: 'catalogo_micas.html', label: 'Catálogo de Micas' },
+            { id: 'servicios.html', label: 'Gestión de Servicios' },
+            { id: 'sucursales.html', label: 'Sucursales' },
+            { id: 'rutas.html', label: 'Rutas y Traslados' },
+            { id: 'loggin.html', label: 'Gestión de Usuarios' },
+            { id: 'historial.html', label: 'Historial / Auditoría' }
+        ];
+
+        const MATRIZ_DEFAULT = {
+            id: 'SUC-001',
+            clave: 'SUC-001',
+            nombre: 'Matriz',
+            direccion: 'PENSAMIENTOS 201, COL REFORMA OAXACA DE JUAREZ CP.68050',
+            telefono: '9515010993',
+            encargado: 'Administrador General',
+            horario: 'L-V 8:00 AM - 8:00 PM | S 8:00 AM - 2:00 PM',
+            prefijoNota: 'NOTA',
+            estatus: 'Activa',
+            esMatriz: true
+        };
+
+        const SUCURSALES_ELIMINADAS_KEY = 'opti_betesda_sucursales_eliminadas';
+
+        let defaultAdmin = {
+            user: 'Admin',
+            pass: 'Alex150515',
+            role: 'Administrador',
+            sucursalId: 'TODAS',
+            modulos: ALL_MODULES.map(m => m.id)
+        };
+
+        function esUsuarioAdministrador(userObj) {
+            if (!userObj) return false;
+            const u = String(userObj.user || '').trim().toLowerCase();
+            const r = String(userObj.role || '').trim().toLowerCase();
+            const s = String(userObj.sucursalId || userObj.sucursal_id || userObj.sucursal || '').trim().toUpperCase();
+            return u === 'admin' || r.includes('administrador') || s === 'TODAS' || s === 'ALL' || userObj.accesoGlobalSucursales === true;
+        }
+
+        function obtenerSucursalAsignadaUsuario(userObj) {
+            if (!userObj) return null;
+            const rawId = userObj.sucursalId || userObj.sucursal_id || userObj.sucursal || userObj.sucursalNombre || '';
+            if (!rawId || ['TODAS', 'ALL'].includes(String(rawId).trim().toUpperCase())) {
+                return null;
+            }
+            const found = sucursalesDB.find(s =>
+                String(s.id).toLowerCase() === String(rawId).toLowerCase() ||
+                String(s.clave || '').toLowerCase() === String(rawId).toLowerCase() ||
+                String(s.nombre || '').toLowerCase() === String(rawId).toLowerCase()
+            );
+            return found ? found.id : null;
+        }
+
+        let storedUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+        let usersDB = (storedUsers && storedUsers.length > 0) ? storedUsers : [defaultAdmin];
+        let sucursalesEliminadas = JSON.parse(localStorage.getItem(SUCURSALES_ELIMINADAS_KEY)) || [];
+        let sucursalesDB = JSON.parse(localStorage.getItem('opti_betesda_sucursales')) || [];
+        let sucursalActivaId = sessionStorage.getItem('opti_betesda_sucursal_activa') || localStorage.getItem('opti_betesda_sucursal_activa') || 'SUC-001';
+        let currentUser = null;
+        let sidebarTimer = null;
+        let sucursalEditandoUsuariosId = null;
+
+        window.onload = function() {
+            inicializarMatrizYDatos();
+            checkSession();
+            renderSelectorSucursalHeader();
+            renderFiltroSucursales();
+            actualizarEstadisticas();
+            renderSucursales();
+
+            ['sucursalNombre', 'sucursalDireccion', 'sucursalTelefono'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', actualizarPreviewTicket);
+            });
+        };
+
+        function registrarSucursalEliminada(id, clave, nombre) {
+            const setEliminadas = new Set(sucursalesEliminadas.map(x => String(x || '').trim().toUpperCase()).filter(Boolean));
+            [id, clave, nombre].forEach(val => {
+                if (val && String(val).trim()) setEliminadas.add(String(val).trim().toUpperCase());
+            });
+            sucursalesEliminadas = Array.from(setEliminadas);
+            localStorage.setItem(SUCURSALES_ELIMINADAS_KEY, JSON.stringify(sucursalesEliminadas));
+        }
+
+        function esSucursalEliminada(s) {
+            if (!s) return false;
+            const eliminadasSet = new Set((JSON.parse(localStorage.getItem(SUCURSALES_ELIMINADAS_KEY)) || []).map(x => String(x || '').trim().toUpperCase()).filter(Boolean));
+            const candidatos = [s.id, s.clave, s.nombre].filter(Boolean).map(v => String(v).trim().toUpperCase());
+            return candidatos.some(c => eliminadasSet.has(c));
+        }
+
+        function inicializarMatrizYDatos() {
+            sucursalesEliminadas = JSON.parse(localStorage.getItem(SUCURSALES_ELIMINADAS_KEY)) || [];
+            const rawSuc = JSON.parse(localStorage.getItem('opti_betesda_sucursales'));
+
+            if (!Array.isArray(rawSuc) || rawSuc.length === 0) {
+                sucursalesDB = [{ ...MATRIZ_DEFAULT }];
+            } else {
+                const vistas = new Set();
+                sucursalesDB = rawSuc.filter(s => {
+                    if (!s) return false;
+                    const key = String(s.id || s.clave || '').trim().toUpperCase();
+                    if (!key || vistas.has(key)) return false;
+                    vistas.add(key);
+                    if (key === 'SUC-001') return true;
+                    return !esSucursalEliminada(s);
+                });
+
+                if (!sucursalesDB.some(s => s.id === 'SUC-001' || s.clave === 'SUC-001')) {
+                    sucursalesDB.unshift({ ...MATRIZ_DEFAULT });
+                }
+            }
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+
+            if (!sucursalesDB.some(s => s.id === sucursalActivaId)) {
+                sucursalActivaId = 'SUC-001';
+                localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            }
+
+            const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+            if (Array.isArray(freshUsers) && freshUsers.length > 0) {
+                usersDB = freshUsers;
+            }
+
+            let adminFound = usersDB.find(u => u.user === 'Admin');
+            if (adminFound) {
+                adminFound.modulos = ALL_MODULES.map(m => m.id);
+                adminFound.sucursalId = 'TODAS';
+                localStorage.setItem('opti_betesda_users', JSON.stringify(usersDB));
+            }
+
+            vincularRegistrosSinSucursalAMatriz(false);
+        }
+
+        function restaurarSucursalesBase() {
+            const listaActual = JSON.parse(localStorage.getItem('opti_betesda_sucursales')) || [];
+            listaActual.forEach(s => {
+                if (s && s.id !== 'SUC-001' && !s.esMatriz) {
+                    registrarSucursalEliminada(s.id, s.clave, s.nombre);
+                }
+            });
+            sucursalesDB = [{ ...MATRIZ_DEFAULT }];
+            sucursalActivaId = 'SUC-001';
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+            localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+
+            renderSelectorSucursalHeader();
+            renderFiltroSucursales();
+            actualizarEstadisticas();
+            renderSucursales();
+            showToast("Sucursales residuales limpiadas. Solo Matriz activa.", "success");
+        }
+
+        function vincularRegistrosSinSucursalAMatriz(mostrarNotificacion = true) {
+            let cambios = 0;
+
+            let existencias = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || [];
+            existencias.forEach(item => {
+                if (!item.sucursalId) {
+                    item.sucursalId = 'SUC-001';
+                    item.sucursalNombre = 'Matriz';
+                    cambios++;
+                }
+            });
+            localStorage.setItem('opti_betesda_existencias', JSON.stringify(existencias));
+
+            let ventas = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+            ventas.forEach(v => {
+                if (!v.sucursalId) {
+                    v.sucursalId = 'SUC-001';
+                    v.sucursalNombre = 'Matriz';
+                    cambios++;
+                }
+            });
+            localStorage.setItem('opti_betesda_ventas_realizadas', JSON.stringify(ventas));
+
+            let cierres = JSON.parse(localStorage.getItem('opti_betesda_cierres_caja')) || [];
+            cierres.forEach(c => {
+                if (!c.sucursalId) {
+                    c.sucursalId = 'SUC-001';
+                    c.sucursalNombre = 'Matriz';
+                    cambios++;
+                }
+            });
+            localStorage.setItem('opti_betesda_cierres_caja', JSON.stringify(cierres));
+
+            if (mostrarNotificacion) {
+                if (cambios > 0) {
+                    showToast(`Se vincularon ${cambios} registros previos a Matriz (SUC-001).`, "success");
+                } else {
+                    showToast("Todos los registros previos ya están vinculados correctamente.", "info");
+                }
+                renderSucursales();
+            }
+        }
+
+        function sincronizarDatosMatriz() {
+            vincularRegistrosSinSucursalAMatriz(true);
+        }
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+                if (Array.isArray(freshUsers) && freshUsers.length > 0) {
+                    usersDB = freshUsers;
+                    const synced = usersDB.find(u => String(u.user || '').toLowerCase() === String(currentUser.user || '').toLowerCase());
+                    if (synced) {
+                        currentUser = { ...currentUser, ...synced };
+                        sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                    }
+                }
+
+                const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+                if (!esUsuarioAdministrador(currentUser) && currentUser.modulos && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                if (!esUsuarioAdministrador(currentUser)) {
+                    const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                    if (asignadaId) {
+                        sucursalActivaId = asignadaId;
+                        sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                        localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                    }
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+
+                const btnNueva = document.getElementById('btnNuevaSucursal');
+                if (btnNueva && !esUsuarioAdministrador(currentUser)) {
+                    btnNueva.classList.add('hidden');
+                } else if (btnNueva) {
+                    btnNueva.classList.remove('hidden');
+                }
+
+                aplicarPermisosMenu();
+                startSidebarTimer();
+            } else {
+                currentUser = null;
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function aplicarPermisosMenu() {
+            const sidebarLinks = document.querySelectorAll('#sidebar a[data-module]');
+            const esAdmin = esUsuarioAdministrador(currentUser);
+            sidebarLinks.forEach(link => {
+                const moduleName = link.getAttribute('data-module');
+                if (esAdmin || (currentUser.modulos && currentUser.modulos.includes(moduleName))) {
+                    link.style.display = '';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        }
+
+        function handleLogin() {
+            const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+            if (Array.isArray(freshUsers) && freshUsers.length > 0) usersDB = freshUsers;
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            let found = usersDB.find(item => item.user.toLowerCase() === u.toLowerCase() && item.pass === p);
+
+            if (!found && u.toLowerCase() === 'admin' && p === 'Alex150515') {
+                found = defaultAdmin;
+            }
+
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                if (!esUsuarioAdministrador(currentUser)) {
+                    const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                    if (asignadaId) {
+                        sucursalActivaId = asignadaId;
+                        sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                        localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                    }
+                }
+                checkSession();
+                renderSelectorSucursalHeader();
+                actualizarEstadisticas();
+                renderSucursales();
+                showToast("Bienvenido", "success");
+            } else {
+                showToast("Usuario o contraseña incorrectos", "error");
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('opti_betesda_session');
+            checkSession();
+        }
+
+        function renderSelectorSucursalHeader() {
+            const select = document.getElementById('headerSucursalSelect');
+            const badge = document.getElementById('sucursalLockedBadge');
+            if (!select) return;
+
+            const esAdmin = !currentUser || esUsuarioAdministrador(currentUser);
+            if (!esAdmin) {
+                const asignadaId = obtenerSucursalAsignadaUsuario(currentUser);
+                if (asignadaId) sucursalActivaId = asignadaId;
+            }
+
+            const disponibles = esAdmin
+                ? sucursalesDB.filter(s => s.estatus === 'Activa' || s.id === sucursalActivaId)
+                : sucursalesDB.filter(s => s.id === sucursalActivaId);
+
+            select.innerHTML = '';
+            (disponibles.length > 0 ? disponibles : sucursalesDB.filter(s => s.id === sucursalActivaId)).forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.clave} - ${s.nombre}`;
+                if (s.id === sucursalActivaId) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.disabled = !esAdmin;
+            select.classList.toggle('opacity-90', !esAdmin);
+            select.classList.toggle('cursor-not-allowed', !esAdmin);
+            select.classList.toggle('cursor-pointer', esAdmin);
+            if (badge) {
+                badge.textContent = !esAdmin ? '· Asignada' : '';
+                badge.classList.toggle('hidden', esAdmin);
+            }
+        }
+
+        function cambiarSucursalActiva(nuevaId) {
+            if (!esUsuarioAdministrador(currentUser)) {
+                renderSelectorSucursalHeader();
+                actualizarEstadisticas();
+                renderSucursales();
+                showToast("Tu usuario tiene sucursal asignada; no puedes cambiar de sucursal.", "error");
+                return;
+            }
+            sucursalActivaId = nuevaId;
+            localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            const suc = sucursalesDB.find(s => s.id === nuevaId);
+            actualizarEstadisticas();
+            renderSucursales();
+            if (suc) {
+                showToast(`Operando ahora en: ${suc.nombre} (${suc.clave})`, "success");
+            }
+        }
+
+        function renderFiltroSucursales() {
+            const select = document.getElementById('filtroSelectSucursalEspecifica');
+            if (!select) return;
+            const valorActual = select.value;
+            select.innerHTML = '<option value="TODAS">Filtrar por sucursal...</option>';
+            sucursalesDB.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = `${s.clave} - ${s.nombre}`;
+                if (s.id === valorActual) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        function actualizarEstadisticas() {
+            const total = sucursalesDB.length;
+            const activas = sucursalesDB.filter(s => s.estatus === 'Activa').length;
+
+            const productos = JSON.parse(localStorage.getItem('opti_betesda_history')) || [];
+            const micas = JSON.parse(localStorage.getItem('opti_betesda_micas')) || [];
+            const servicios = JSON.parse(localStorage.getItem('opti_betesda_servicios')) || [];
+            const totalCatalogo = productos.length + micas.length + servicios.length;
+
+            const actual = sucursalesDB.find(s => s.id === sucursalActivaId) || sucursalesDB[0];
+
+            document.getElementById('statTotalSucursales').textContent = total;
+            document.getElementById('statSucursalesActivas').textContent = activas;
+            document.getElementById('statCatalogoCompartido').textContent = totalCatalogo;
+            if (actual) {
+                document.getElementById('statSucursalActualNombre').textContent = actual.nombre;
+                document.getElementById('statSucursalActualClave').textContent = actual.clave;
+            }
+        }
+
+        function obtenerMetricasSucursal(sucursalId) {
+            const existencias = JSON.parse(localStorage.getItem('opti_betesda_existencias')) || [];
+            const ventas = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+            const usuariosActuales = JSON.parse(localStorage.getItem('opti_betesda_users')) || usersDB;
+
+            const stockPiezas = existencias
+                .filter(e => (e.sucursalId || 'SUC-001') === sucursalId)
+                .reduce((acc, item) => acc + (parseInt(item.cantidad) || 0), 0);
+
+            const ventasSucursal = ventas.filter(v => (v.sucursalId || 'SUC-001') === sucursalId && !v.cancelada);
+            const totalVendido = ventasSucursal.reduce((acc, v) => acc + (v.montoCobradoAhora !== undefined ? v.montoCobradoAhora : (v.total || 0)), 0);
+
+            const usuariosAsignados = usuariosActuales.filter(u => u.user !== 'Admin' && u.sucursalId === sucursalId);
+
+            return {
+                stockPiezas,
+                cantidadVentas: ventasSucursal.length,
+                totalVendido,
+                usuariosAsignados
+            };
+        }
+
+        function renderSucursales() {
+            const grid = document.getElementById('gridSucursales');
+            if (!grid) return;
+
+            const query = (document.getElementById('filtroBusquedaSucursal')?.value || '').toLowerCase().trim();
+            const estatusFiltro = document.getElementById('filtroEstatusSucursal')?.value || 'TODAS';
+            const sucursalEspecifica = document.getElementById('filtroSelectSucursalEspecifica')?.value || 'TODAS';
+
+            const esAdmin = !currentUser || esUsuarioAdministrador(currentUser);
+
+            let lista = sucursalesDB.filter(s => {
+                if (!esAdmin && s.id !== sucursalActivaId) return false;
+                if (estatusFiltro !== 'TODAS' && s.estatus !== estatusFiltro) return false;
+                if (sucursalEspecifica !== 'TODAS' && s.id !== sucursalEspecifica) return false;
+                if (query) {
+                    const matchNombre = (s.nombre || '').toLowerCase().includes(query);
+                    const matchClave = (s.clave || '').toLowerCase().includes(query);
+                    const matchDir = (s.direccion || '').toLowerCase().includes(query);
+                    const matchEnc = (s.encargado || '').toLowerCase().includes(query);
+                    return matchNombre || matchClave || matchDir || matchEnc;
+                }
+                return true;
+            });
+
+            if (lista.length === 0) {
+                grid.innerHTML = `<div class="col-span-full p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-300">No se encontraron sucursales con los filtros aplicados.</div>`;
+                return;
+            }
+
+            grid.innerHTML = '';
+
+            lista.forEach(s => {
+                const metricas = obtenerMetricasSucursal(s.id);
+                const esActivaOperando = s.id === sucursalActivaId;
+                const badgeEstatus = s.estatus === 'Activa'
+                    ? `<span class="bg-emerald-100 text-betesda-green text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">Activa</span>`
+                    : `<span class="bg-rose-100 text-rose-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-rose-200">Inactiva</span>`;
+
+                const badgeMatriz = s.esMatriz
+                    ? `<span class="bg-betesda-yellow text-betesda-darkgreen text-[10px] font-extrabold px-2 py-0.5 rounded-full">MATRIZ · TALLER</span>`
+                    : `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-full">Taller → Matriz</span>`;
+
+                const badgeOperando = esActivaOperando
+                    ? `<span class="bg-betesda-green text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1"><i class="fa-solid fa-check"></i> En uso</span>`
+                    : '';
+
+                const usuariosBadges = metricas.usuariosAsignados.length > 0
+                    ? metricas.usuariosAsignados.map(u => `<span class="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-lg text-[10px] font-bold">${u.user} (${u.modulos ? u.modulos.length : 0} mód.)</span>`).join(' ')
+                    : `<span class="text-[10px] text-slate-400 italic">Sin operadores exclusivos asignados</span>`;
+
+                const botonesAdmin = esAdmin ? `
+                    <button onclick="abrirModalUsuariosSucursal('${s.id}')" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1" title="Asignar usuarios y permisos">
+                        <i class="fa-solid fa-users-gear"></i> Usuarios
+                    </button>
+                    <button onclick="editarSucursal('${s.id}')" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1" title="Editar sucursal">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    ${!s.esMatriz ? `
+                        <button onclick="toggleEstatusSucursal('${s.id}')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs border border-slate-300 transition" title="Activar / Desactivar sucursal">
+                            <i class="fa-solid fa-power-off"></i>
+                        </button>
+                        <button onclick="eliminarSucursal('${s.id}')" class="bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white font-bold px-3 py-2 rounded-xl text-xs border border-rose-200 transition" title="Eliminar sucursal">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    ` : ''}
+                ` : '';
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-3xl border-2 ${esActivaOperando ? 'border-betesda-green shadow-md' : 'border-betesda-lightgreen'} p-4 flex flex-col justify-between space-y-4 transition hover:shadow-md">
+                        <div class="space-y-2.5">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="font-mono text-xs font-extrabold text-betesda-green bg-betesda-softgreen px-2 py-0.5 rounded-lg border border-betesda-lightgreen">${s.clave}</span>
+                                        ${badgeMatriz}
+                                        ${badgeEstatus}
+                                        ${badgeOperando}
+                                    </div>
+                                    <h4 class="text-base font-extrabold text-betesda-darkgreen mt-1.5">${s.nombre}</h4>
+                                </div>
+                            </div>
+
+                            <div class="text-xs text-slate-600 space-y-1 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                                <div class="flex items-start gap-2">
+                                    <i class="fa-solid fa-location-dot text-betesda-green mt-0.5 w-3.5 text-center"></i>
+                                    <span>${s.direccion}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-phone text-betesda-green w-3.5 text-center"></i>
+                                    <span class="font-semibold">${s.telefono}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-user-tie text-betesda-gold w-3.5 text-center"></i>
+                                    <span>Encargado: <strong>${s.encargado || 'No asignado'}</strong></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-clock text-slate-400 w-3.5 text-center"></i>
+                                    <span class="text-[11px]">${s.horario || 'Horario general'}</span>
+                                </div>
+                            </div>
+
+                            <!-- INDICADORES INDEPENDIENTES DE LA SUCURSAL -->
+                            <div class="grid grid-cols-3 gap-2 text-center bg-betesda-softgreen p-2.5 rounded-2xl border border-betesda-lightgreen">
+                                <div>
+                                    <span class="block text-[9px] font-bold text-slate-500 uppercase">Stock Propio</span>
+                                    <span class="font-mono font-extrabold text-xs text-betesda-darkgreen">${metricas.stockPiezas} pzs</span>
+                                </div>
+                                <div class="border-x border-betesda-lightgreen">
+                                    <span class="block text-[9px] font-bold text-slate-500 uppercase">Notas</span>
+                                    <span class="font-mono font-extrabold text-xs text-betesda-darkgreen">${metricas.cantidadVentas}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[9px] font-bold text-slate-500 uppercase">Ingresos</span>
+                                    <span class="font-mono font-extrabold text-xs text-betesda-green">$${metricas.totalVendido.toFixed(2)}</span>
+                                </div>
+                            </div>
+
+                            <!-- USUARIOS ASIGNADOS -->
+                            <div class="space-y-1">
+                                <span class="block text-[10px] font-bold text-slate-400 uppercase">Usuarios Asignados:</span>
+                                <div class="flex flex-wrap gap-1">
+                                    ${usuariosBadges}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                            ${!esActivaOperando && s.estatus === 'Activa' && esAdmin ? `
+                                <button onclick="cambiarSucursalActiva('${s.id}')" class="bg-betesda-green hover:bg-betesda-darkgreen text-white font-bold px-3.5 py-2 rounded-xl text-xs shadow transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-right-to-bracket text-betesda-yellow"></i> Operar Aquí
+                                </button>
+                            ` : `
+                                <span class="text-[11px] font-bold text-betesda-green flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-dot"></i> ${esActivaOperando ? 'Sucursal Seleccionada' : 'Sucursal Inactiva'}
+                                </span>
+                            `}
+                            <div class="flex items-center gap-1.5">
+                                ${botonesAdmin}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function obtenerSiguienteNumeroSucursal() {
+            const nums = sucursalesDB
+                .map(s => {
+                    const match = String(s.clave || s.id || '').match(/(\d+)$/);
+                    return match ? parseInt(match[1], 10) : 0;
+                })
+                .filter(n => !isNaN(n));
+            const maxNum = nums.length > 0 ? Math.max(...nums) : 1;
+            return maxNum + 1;
+        }
+
+        function abrirModalSucursal() {
+            document.getElementById('sucursalIdEdit').value = '';
+            document.getElementById('tituloModalSucursal').innerHTML = `<i class="fa-solid fa-store text-betesda-yellow"></i> Registrar Nueva Sucursal`;
+            
+            const siguienteNum = obtenerSiguienteNumeroSucursal();
+            const numFormateado = String(siguienteNum).padStart(3, '0');
+            document.getElementById('sucursalClave').value = `SUC-${numFormateado}`;
+            document.getElementById('sucursalClave').disabled = false;
+            document.getElementById('sucursalNombre').value = '';
+            document.getElementById('sucursalDireccion').value = '';
+            document.getElementById('sucursalTelefono').value = '';
+            document.getElementById('sucursalEncargado').value = '';
+            document.getElementById('sucursalEstatus').value = 'Activa';
+            document.getElementById('sucursalHorario').value = 'L-V 8:00 AM - 8:00 PM | S 8:00 AM - 2:00 PM';
+            document.getElementById('sucursalPrefijoNota').value = `S${siguienteNum}-NOTA`;
+
+            actualizarPreviewTicket();
+            document.getElementById('modalSucursal').classList.remove('hidden');
+        }
+
+        function editarSucursal(id) {
+            const suc = sucursalesDB.find(s => s.id === id);
+            if (!suc) return;
+
+            document.getElementById('sucursalIdEdit').value = suc.id;
+            document.getElementById('tituloModalSucursal').innerHTML = `<i class="fa-solid fa-pen-to-square text-betesda-yellow"></i> Editar Sucursal (${suc.clave})`;
+            document.getElementById('sucursalClave').value = suc.clave;
+            document.getElementById('sucursalClave').disabled = !!suc.esMatriz;
+            document.getElementById('sucursalNombre').value = suc.nombre;
+            document.getElementById('sucursalDireccion').value = suc.direccion;
+            document.getElementById('sucursalTelefono').value = suc.telefono;
+            document.getElementById('sucursalEncargado').value = suc.encargado || '';
+            document.getElementById('sucursalEstatus').value = suc.estatus || 'Activa';
+            document.getElementById('sucursalHorario').value = suc.horario || '';
+            document.getElementById('sucursalPrefijoNota').value = suc.prefijoNota || 'NOTA';
+
+            actualizarPreviewTicket();
+            document.getElementById('modalSucursal').classList.remove('hidden');
+        }
+
+        function cerrarModalSucursal() {
+            document.getElementById('modalSucursal').classList.add('hidden');
+        }
+
+        function actualizarPreviewTicket() {
+            const nombre = document.getElementById('sucursalNombre').value.trim() || 'MATRIZ';
+            const direccion = document.getElementById('sucursalDireccion').value.trim() || 'PENSAMIENTOS 201, COL REFORMA OAXACA DE JUAREZ';
+            const telefono = document.getElementById('sucursalTelefono').value.trim() || '9515010993';
+
+            document.getElementById('previewTicketSucursal').textContent = `SUCURSAL: ${nombre.toUpperCase()}`;
+            document.getElementById('previewTicketDireccion').textContent = direccion.toUpperCase();
+            document.getElementById('previewTicketTelefono').textContent = `TEL. ${telefono}`;
+        }
+
+        function guardarSucursal() {
+            const idEdit = document.getElementById('sucursalIdEdit').value;
+            const clave = document.getElementById('sucursalClave').value.trim().toUpperCase();
+            const nombre = document.getElementById('sucursalNombre').value.trim();
+            const direccion = document.getElementById('sucursalDireccion').value.trim();
+            const telefono = document.getElementById('sucursalTelefono').value.trim();
+            const encargado = document.getElementById('sucursalEncargado').value.trim();
+            const estatus = document.getElementById('sucursalEstatus').value;
+            const horario = document.getElementById('sucursalHorario').value.trim();
+            const prefijoNota = document.getElementById('sucursalPrefijoNota').value.trim().toUpperCase() || 'NOTA';
+
+            if (!clave || !nombre || !direccion || !telefono) {
+                showToast("Completa los campos obligatorios (*)", "error");
+                return;
+            }
+
+            if (idEdit) {
+                const index = sucursalesDB.findIndex(s => s.id === idEdit);
+                if (index !== -1) {
+                    sucursalesDB[index] = {
+                        ...sucursalesDB[index],
+                        clave,
+                        nombre,
+                        direccion,
+                        telefono,
+                        encargado,
+                        estatus,
+                        horario,
+                        prefijoNota
+                    };
+                }
+                showToast("Sucursal actualizada correctamente", "success");
+            } else {
+                if (sucursalesDB.some(s => s.clave === clave || s.id === clave)) {
+                    showToast("Ya existe una sucursal con esa clave", "error");
+                    return;
+                }
+                sucursalesEliminadas = sucursalesEliminadas.filter(x => ![clave.toUpperCase(), nombre.toUpperCase()].includes(String(x).toUpperCase()));
+                localStorage.setItem(SUCURSALES_ELIMINADAS_KEY, JSON.stringify(sucursalesEliminadas));
+
+                sucursalesDB.push({
+                    id: clave,
+                    clave,
+                    nombre,
+                    direccion,
+                    telefono,
+                    encargado,
+                    estatus,
+                    horario,
+                    prefijoNota,
+                    esMatriz: false
+                });
+                showToast(`Sucursal "${nombre}" creada con éxito`, "success");
+            }
+
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+            cerrarModalSucursal();
+            renderSelectorSucursalHeader();
+            renderFiltroSucursales();
+            actualizarEstadisticas();
+            renderSucursales();
+        }
+
+        function eliminarSucursal(id) {
+            const suc = sucursalesDB.find(s => s.id === id);
+            if (!suc || suc.esMatriz) return;
+            if (!confirm(`¿Eliminar definitivamente la sucursal "${suc.nombre}" (${suc.clave})? Sus usuarios asignados pasarán a Matriz.`)) return;
+
+            registrarSucursalEliminada(suc.id, suc.clave, suc.nombre);
+            sucursalesDB = sucursalesDB.filter(s => s.id !== id);
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+
+            usersDB.forEach(u => {
+                if (u.sucursalId === id) {
+                    u.sucursalId = 'SUC-001';
+                    u.sucursalNombre = 'Matriz';
+                }
+            });
+            localStorage.setItem('opti_betesda_users', JSON.stringify(usersDB));
+
+            if (sucursalActivaId === id) {
+                sucursalActivaId = 'SUC-001';
+                localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            }
+
+            renderSelectorSucursalHeader();
+            renderFiltroSucursales();
+            actualizarEstadisticas();
+            renderSucursales();
+            showToast(`Sucursal "${suc.nombre}" eliminada`, "info");
+        }
+
+        function toggleEstatusSucursal(id) {
+            const suc = sucursalesDB.find(s => s.id === id);
+            if (!suc || suc.esMatriz) return;
+
+            suc.estatus = suc.estatus === 'Activa' ? 'Inactiva' : 'Activa';
+            localStorage.setItem('opti_betesda_sucursales', JSON.stringify(sucursalesDB));
+
+            if (suc.estatus === 'Inactiva' && sucursalActivaId === id) {
+                sucursalActivaId = 'SUC-001';
+                localStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+                sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActivaId);
+            }
+
+            renderSelectorSucursalHeader();
+            actualizarEstadisticas();
+            renderSucursales();
+            showToast(`Sucursal ${suc.nombre} marcada como ${suc.estatus}`, "info");
+        }
+
+        function abrirModalUsuariosSucursal(sucursalId) {
+            const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+            if (Array.isArray(freshUsers) && freshUsers.length > 0) {
+                usersDB = freshUsers;
+            }
+            const suc = sucursalesDB.find(s => s.id === sucursalId);
+            if (!suc) return;
+
+            sucursalEditandoUsuariosId = sucursalId;
+            document.getElementById('subtituloUsuariosSucursal').textContent = `Sucursal: ${suc.clave} - ${suc.nombre}`;
+            document.getElementById('nuevoUserNombre').value = '';
+            document.getElementById('nuevoUserPass').value = '';
+
+            renderListaUsuariosPermisos();
+            document.getElementById('modalUsuariosSucursal').classList.remove('hidden');
+        }
+
+        function cerrarModalUsuariosSucursal() {
+            document.getElementById('modalUsuariosSucursal').classList.add('hidden');
+            sucursalEditandoUsuariosId = null;
+        }
+
+        function crearUsuarioEnSucursal() {
+            if (!sucursalEditandoUsuariosId) return;
+            const user = document.getElementById('nuevoUserNombre').value.trim();
+            const pass = document.getElementById('nuevoUserPass').value.trim();
+            const role = document.getElementById('nuevoUserRole').value;
+
+            if (!user || !pass) {
+                showToast("Ingresa usuario y contraseña", "error");
+                return;
+            }
+
+            if (usersDB.some(u => u.user.toLowerCase() === user.toLowerCase())) {
+                showToast("Ese nombre de usuario ya existe", "error");
+                return;
+            }
+
+            let modulosIniciales = ['ventas.html', 'existencias.html'];
+            if (role === 'Encargado de Sucursal') {
+                modulosIniciales = ['index.html', 'inventario.html', 'ventas.html', 'taller.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'catalogo_micas.html', 'servicios.html', 'rutas.html', 'historial.html'];
+            } else if (role === 'Taller / Laboratorio') {
+                modulosIniciales = ['taller.html', 'existencias.html', 'rutas.html'];
+            } else if (role === 'Almacenista') {
+                modulosIniciales = ['index.html', 'inventario.html', 'etiquetado.html', 'existencias.html', 'entrada_directa.html', 'rutas.html'];
+            }
+
+            const sucObj = sucursalesDB.find(s => s.id === sucursalEditandoUsuariosId);
+            usersDB.push({
+                user,
+                pass,
+                role,
+                sucursalId: sucursalEditandoUsuariosId,
+                sucursalNombre: sucObj ? sucObj.nombre : sucursalEditandoUsuariosId,
+                accesoGlobalSucursales: false,
+                modulos: modulosIniciales
+            });
+
+            localStorage.setItem('opti_betesda_users', JSON.stringify(usersDB));
+            document.getElementById('nuevoUserNombre').value = '';
+            document.getElementById('nuevoUserPass').value = '';
+            renderListaUsuariosPermisos();
+            renderSucursales();
+            showToast(`Usuario "${user}" creado y asignado a la sucursal`, "success");
+        }
+
+        function renderListaUsuariosPermisos() {
+            const container = document.getElementById('listaUsuariosPermisosContainer');
+            if (!container || !sucursalEditandoUsuariosId) return;
+
+            const operadores = usersDB.filter(u => u.user !== 'Admin');
+
+            if (operadores.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-300">No hay usuarios operadores registrados aún. Crea uno arriba para asignarlo a esta sucursal.</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            operadores.forEach((u, idx) => {
+                const perteneceAEstaSucursal = u.sucursalId === sucursalEditandoUsuariosId;
+                const sucAsignadaActual = sucursalesDB.find(s => s.id === u.sucursalId);
+                const textoSucursalActual = sucAsignadaActual ? `${sucAsignadaActual.clave} - ${sucAsignadaActual.nombre}` : 'Sin sucursal asignada';
+
+                let checkboxesHtml = ALL_MODULES.map(mod => {
+                    const checked = (u.modulos || []).includes(mod.id) ? 'checked' : '';
+                    return `
+                        <label class="flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-[11px] cursor-pointer hover:bg-betesda-softgreen">
+                            <input type="checkbox" class="chk-modulo-usuario accent-betesda-green" data-username="${u.user}" value="${mod.id}" ${checked}>
+                            <span class="font-medium text-slate-700">${mod.label}</span>
+                        </label>
+                    `;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="p-3.5 rounded-2xl border-2 ${perteneceAEstaSucursal ? 'border-betesda-green bg-betesda-softgreen/50' : 'border-slate-200 bg-white'} space-y-2.5">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="chkAsignar_${idx}" class="chk-asignar-sucursal w-4 h-4 accent-betesda-green cursor-pointer" data-username="${u.user}" ${perteneceAEstaSucursal ? 'checked' : ''}>
+                                <label for="chkAsignar_${idx}" class="text-xs font-extrabold text-betesda-darkgreen cursor-pointer">${u.user}</label>
+                                <span class="text-[10px] bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded-full">${u.role || 'Operador'}</span>
+                            </div>
+                            <span class="text-[10px] font-semibold ${perteneceAEstaSucursal ? 'text-betesda-green' : 'text-slate-400'}">
+                                Asignado actualmente a: <strong>${textoSucursalActual}</strong>
+                            </span>
+                        </div>
+
+                        <div class="space-y-1">
+                            <span class="block text-[10px] font-bold text-slate-500 uppercase">Módulos visibles para ${u.user}:</span>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                ${checkboxesHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function guardarAsignacionUsuariosSucursal() {
+            if (!sucursalEditandoUsuariosId) return;
+
+            const sucObj = sucursalesDB.find(s => s.id === sucursalEditandoUsuariosId);
+            const asignarChecks = document.querySelectorAll('.chk-asignar-sucursal');
+            asignarChecks.forEach(chk => {
+                const username = chk.getAttribute('data-username');
+                const userObj = usersDB.find(u => u.user === username);
+                if (!userObj) return;
+
+                if (chk.checked) {
+                    userObj.sucursalId = sucursalEditandoUsuariosId;
+                    userObj.sucursalNombre = sucObj ? sucObj.nombre : sucursalEditandoUsuariosId;
+                    userObj.accesoGlobalSucursales = false;
+                } else if (userObj.sucursalId === sucursalEditandoUsuariosId) {
+                    userObj.sucursalId = 'SUC-001';
+                    userObj.sucursalNombre = 'Matriz';
+                }
+
+                const modChecks = document.querySelectorAll(`.chk-modulo-usuario[data-username="${username}"]`);
+                const seleccionados = [];
+                modChecks.forEach(mc => {
+                    if (mc.checked) seleccionados.push(mc.value);
+                });
+                userObj.modulos = seleccionados;
+            });
+
+            localStorage.setItem('opti_betesda_users', JSON.stringify(usersDB));
+            cerrarModalUsuariosSucursal();
+            renderSucursales();
+            showToast("Asignaciones de usuarios y permisos guardadas", "success");
+        }
+
+        function showToast(msg, type = "success") {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = msg;
+            t.classList.remove('translate-y-24', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                t.classList.remove('translate-y-0', 'opacity-100');
+                t.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

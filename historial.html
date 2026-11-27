@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Ventas - Óptica Betesda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        betesda: {
+                            green: '#006837',
+                            darkgreen: '#004d28',
+                            lightgreen: '#d7ecd9',
+                            softgreen: '#f2f8f3',
+                            yellow: '#fdb813',
+                            gold: '#e2a30d',
+                            charcoal: '#1a251e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-betesda-softgreen text-betesda-charcoal min-h-screen flex flex-col overflow-hidden">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-betesda-green flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow p-8 w-full max-w-md space-y-6">
+            <div class="text-center space-y-2">
+                <div class="bg-betesda-softgreen w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border-2 border-betesda-green shadow-inner">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-betesda-green"></i>
+                </div>
+                <h1 class="text-2xl font-extrabold text-betesda-green uppercase">ÓPTICA BETESDA</h1>
+                <p class="text-xs text-slate-500 font-medium">Control de Acceso al Historial de Ventas</p>
+            </div>
+            <form onsubmit="event.preventDefault(); handleLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Usuario</label>
+                    <input type="text" id="loginUser" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-betesda-green uppercase mb-1">Contraseña</label>
+                    <input type="password" id="loginPass" required class="w-full bg-slate-50 border-2 border-betesda-lightgreen rounded-2xl p-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-betesda-green text-white font-bold py-3 rounded-2xl shadow-lg">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER -->
+    <div id="appContainer" class="flex flex-col h-screen overflow-hidden hidden">
+        <header class="bg-betesda-green text-white shadow-md border-b-4 border-betesda-yellow shrink-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex justify-between items-center gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white p-2 rounded-xl border border-betesda-yellow">
+                        <i class="fa-solid fa-hand-holding-heart text-xl text-betesda-green"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-extrabold text-white uppercase">BETESDA <span class="text-[10px] bg-betesda-yellow text-betesda-darkgreen px-2 py-0.5 rounded-full">ÓPTICA</span></h1>
+                        <p class="text-[11px] text-betesda-lightgreen font-medium">Historial, Auditoría y Rutas de Ventas · <span id="headerSucursalNombre" class="font-bold text-betesda-yellow">Matriz</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div id="sucursalSelectorWrapper" class="flex items-center gap-1.5 bg-betesda-darkgreen px-2.5 py-1.5 rounded-xl border border-betesda-yellow/50">
+                        <i class="fa-solid fa-store text-betesda-yellow text-xs"></i>
+                        <select id="selectSucursalActiva" onchange="cambiarSucursalActiva(this.value)" class="bg-transparent text-white text-xs font-bold outline-none cursor-pointer"></select>
+                        <span id="sucursalLockedBadge" class="hidden text-[10px] font-extrabold text-betesda-yellow uppercase tracking-wide"></span>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <span id="navUserName" class="block text-xs font-bold text-betesda-yellow">Admin</span>
+                        <span id="navUserRole" class="block text-[10px] text-betesda-lightgreen">Administrador</span>
+                    </div>
+                    <button onclick="logout()" class="bg-betesda-darkgreen hover:bg-rose-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition border border-betesda-yellow/40 flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-power-off text-betesda-yellow"></i> <span>Salir</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-grow flex flex-col md:flex-row max-w-7xl w-full mx-auto overflow-hidden">
+            <!-- BARRA LATERAL UNIFICADA -->
+            <aside id="sidebar" onmouseenter="expandSidebar()" onmouseleave="startSidebarTimer()" class="w-full md:w-16 transition-all duration-300 ease-in-out bg-white border-r border-betesda-lightgreen p-3 space-y-2 shrink-0 overflow-y-auto">
+                <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 mb-2 whitespace-nowrap">Navegación</div>
+                <a href="index.html" data-module="index.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-barcode text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Producto</span>
+                </a>
+                <a href="inventario.html" data-module="inventario.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-file-invoice-dollar text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Registro de Factura</span>
+                </a>
+                <a href="ventas.html" data-module="ventas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-cash-register text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Punto de Venta / RX</span>
+                </a>
+                <a href="taller.html" data-module="taller.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-hammer text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Módulo de Taller</span>
+                </a>
+                <a href="etiquetado.html" data-module="etiquetado.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-tags text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Etiquetado Rápido</span>
+                </a>
+                <a href="existencias.html" data-module="existencias.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-boxes-stacked text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Existencias / Inventario</span>
+                </a>
+                <a href="entrada_directa.html" data-module="entrada_directa.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-sliders text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Entrada / Ajustes</span>
+                </a>
+                <a href="catalogo_micas.html" data-module="catalogo_micas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-glasses text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Catálogo de Micas</span>
+                </a>
+                <a href="servicios.html" data-module="servicios.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-screwdriver-wrench text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Servicios</span>
+                </a>
+                <a href="loggin.html" data-module="loggin.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-users-gear text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Usuarios</span>
+                </a>
+                <a href="sucursales.html" data-module="sucursales.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-store text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Gestión de Sucursales</span>
+                </a>
+                <a href="rutas.html" data-module="rutas.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition text-slate-600 hover:bg-betesda-softgreen whitespace-nowrap">
+                    <i class="fa-solid fa-route text-betesda-gold text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Rutas y Traslados</span>
+                </a>
+                <a href="historial.html" data-module="historial.html" class="w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-xs font-bold transition bg-betesda-lightgreen/60 text-betesda-darkgreen border-2 border-betesda-green whitespace-nowrap">
+                    <i class="fa-solid fa-clock-rotate-left text-betesda-green text-base w-5 text-center shrink-0"></i> 
+                    <span class="sidebar-text hidden opacity-0 transition-opacity duration-200">Historial / Auditoría</span>
+                </a>
+            </aside>
+
+            <!-- CONTENIDO PRINCIPAL -->
+            <main class="flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto">
+                <div class="bg-white rounded-3xl shadow-sm border border-betesda-lightgreen/80 p-6 flex flex-col h-full overflow-hidden">
+                    
+                    <!-- ENCABEZADO Y FILTROS -->
+                    <div class="flex flex-col gap-4 mb-4 pb-4 border-b border-betesda-lightgreen shrink-0">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <div>
+                                <h2 class="text-base font-bold text-betesda-green flex items-center gap-2">
+                                    <i class="fa-solid fa-filter text-betesda-yellow"></i> Filtros del Historial de Ventas · <span id="lblSucursalHistorial" class="text-betesda-darkgreen font-extrabold">Matriz</span>
+                                </h2>
+                                <p class="text-[10px] text-slate-500 font-medium">Auditoría de ventas, sucursales de origen y rutas/traslados vinculados · Taller central en Matriz.</p>
+                            </div>
+                            <button onclick="resetFilters()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-xl text-xs transition">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Limpiar Filtros
+                            </button>
+                        </div>
+
+                        <!-- FILTROS -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Fecha Inicial</label>
+                                <input type="date" id="filterFechaInicio" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Fecha Final</label>
+                                <input type="date" id="filterFechaFin" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Ámbito Sucursal</label>
+                                <select id="filterAmbitoSucursal" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-bold text-betesda-darkgreen">
+                                    <option value="ACTIVA">Sucursal Activa</option>
+                                    <option value="TODAS">Todas las Sucursales</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Usuario / Vendedor</label>
+                                <select id="filterUsuario" onchange="renderHistorialVentas()" class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-bold text-betesda-green">
+                                    <option value="TODOS">Todos los Usuarios</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-betesda-green uppercase mb-1">Buscar (Paciente / Nota / Ruta)</label>
+                                <input type="text" id="searchInput" oninput="renderHistorialVentas()" placeholder="Ej. Juan Pérez, Nota #, Ruta..." class="w-full bg-slate-50 border-2 border-betesda-lightgreen text-xs rounded-2xl px-3 py-2 font-medium">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA DE VENTAS -->
+                    <div class="overflow-y-auto flex-grow max-h-[calc(100vh-330px)] pr-1">
+                        <table class="w-full text-left text-xs text-slate-700">
+                            <thead class="bg-betesda-green text-white font-bold sticky top-0 z-10 shadow-sm">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Fecha / Hora</th>
+                                    <th class="p-3">Nota / Folio</th>
+                                    <th class="p-3">Sucursal / Ruta</th>
+                                    <th class="p-3">Paciente</th>
+                                    <th class="p-3">Estado de Pago</th>
+                                    <th class="p-3">Vendedor</th>
+                                    <th class="p-3 text-right">Total</th>
+                                    <th class="p-3 text-center rounded-r-xl">Detalle</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ventasTableBody" class="divide-y divide-betesda-lightgreen/50">
+                                <tr><td colspan="8" class="p-6 text-center text-slate-400">Cargando ventas...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- RESUMEN / TOTALES -->
+                    <div class="mt-3 pt-3 border-t border-betesda-lightgreen flex justify-between items-center px-2 shrink-0">
+                        <span id="totalVentasCount" class="text-xs font-bold text-slate-500">Mostrando 0 ventas</span>
+                        <div class="text-right">
+                            <span class="text-xs font-bold text-slate-500 mr-2">Suma Total Filtrada:</span>
+                            <span id="totalVentasSum" class="text-sm font-extrabold text-betesda-green">$0.00</span>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- VENTANA FLOTANTE (MODAL DETALLE DE VENTA Y ARTÍCULOS) -->
+    <div id="modalDetalleVenta" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl border-4 border-betesda-yellow w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-betesda-green text-white p-4 flex justify-between items-center">
+                <h3 class="font-extrabold text-sm uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-betesda-yellow"></i> Desglose Completo de la Venta
+                </h3>
+                <button onclick="cerrarModal()" class="text-white hover:text-betesda-yellow text-base font-bold">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div id="modalBodyContent" class="p-6 space-y-4 overflow-y-auto text-xs text-slate-700">
+                <!-- Contenido dinámico inyectado por JS -->
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-betesda-lightgreen flex justify-end">
+                <button onclick="cerrarModal()" class="bg-betesda-green text-white font-bold px-4 py-2 rounded-xl text-xs shadow">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TALLER_MATRIZ = { id: 'SUC-001', nombre: 'Matriz' };
+        const SUCURSALES_DEFAULT = [
+            { id: 'SUC-001', nombre: 'Matriz' },
+            { id: 'SUC-002', nombre: 'Sucursal Reforma' },
+            { id: 'SUC-003', nombre: 'Sucursal Centro' }
+        ];
+
+        function esUsuarioAdministrador(userObj) {
+            if (!userObj) return false;
+            const u = String(userObj.user || '').trim().toLowerCase();
+            const r = String(userObj.role || '').trim().toLowerCase();
+            return u === 'admin' || r.includes('administrador');
+        }
+
+        function obtenerSucursalAsignadaUsuario(userObj, sucursales) {
+            if (!userObj) return null;
+            const assignedId = userObj.sucursalId || userObj.sucursal_id || userObj.sucursal;
+            if (assignedId) {
+                const byId = sucursales.find(s => String(s.id).toLowerCase() === String(assignedId).toLowerCase());
+                if (byId) return byId;
+            }
+            const assignedName = userObj.sucursalNombre || userObj.sucursal_nombre;
+            if (assignedName) {
+                const byName = sucursales.find(s => String(s.nombre).toLowerCase() === String(assignedName).toLowerCase());
+                if (byName) return byName;
+            }
+            return null;
+        }
+
+        function obtenerSucursales() {
+            let saved = JSON.parse(localStorage.getItem('opti_betesda_sucursales'));
+            if (!Array.isArray(saved) || saved.length === 0) {
+                localStorage.setItem('opti_betesda_sucursales', JSON.stringify(SUCURSALES_DEFAULT));
+                return [...SUCURSALES_DEFAULT];
+            }
+            if (!saved.some(s => s.id === TALLER_MATRIZ.id)) {
+                saved.unshift({ ...TALLER_MATRIZ });
+                localStorage.setItem('opti_betesda_sucursales', JSON.stringify(saved));
+            }
+            return saved;
+        }
+
+        function obtenerSucursalActiva(userObj = null) {
+            const sucursales = obtenerSucursales();
+            if (userObj && !esUsuarioAdministrador(userObj)) {
+                const asignada = obtenerSucursalAsignadaUsuario(userObj, sucursales);
+                if (asignada) {
+                    sessionStorage.setItem('opti_betesda_sucursal_activa', asignada.id);
+                    localStorage.setItem('opti_betesda_sucursal_activa', asignada.id);
+                    return asignada;
+                }
+            }
+            const savedId = sessionStorage.getItem('opti_betesda_sucursal_activa') || localStorage.getItem('opti_betesda_sucursal_activa');
+            const found = sucursales.find(s => s.id === savedId);
+            return found || sucursales[0] || { ...TALLER_MATRIZ };
+        }
+
+        let sucursalesDB = obtenerSucursales();
+        let sucursalActiva = obtenerSucursalActiva();
+
+        const MODULOS_SISTEMA = [
+            'index.html',
+            'inventario.html',
+            'ventas.html',
+            'taller.html',
+            'etiquetado.html',
+            'existencias.html',
+            'entrada_directa.html',
+            'catalogo_micas.html',
+            'servicios.html',
+            'loggin.html',
+            'sucursales.html',
+            'rutas.html',
+            'historial.html'
+        ];
+
+        let defaultAdmin = {
+            user: 'Admin',
+            pass: 'Alex150515',
+            role: 'Administrador General',
+            accesoGlobalSucursales: true,
+            modulos: [...MODULOS_SISTEMA]
+        };
+
+        let storedUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+        let usersDB = (storedUsers && storedUsers.length > 0) ? storedUsers : [defaultAdmin];
+        let ventasGlobales = [];
+        let rutasDB = [];
+        let currentUser = null;
+        let sidebarTimer = null;
+
+        window.onload = function() {
+            let adminFound = usersDB.find(u => u.user === 'Admin');
+            if (adminFound) {
+                const modulosActuales = Array.isArray(adminFound.modulos) ? adminFound.modulos : [];
+                const faltantes = MODULOS_SISTEMA.filter(m => !modulosActuales.includes(m));
+                if (faltantes.length > 0) {
+                    adminFound.modulos = [...modulosActuales, ...faltantes];
+                    localStorage.setItem('opti_betesda_users', JSON.stringify(usersDB));
+                }
+            }
+            checkSession(); 
+            poblarSelectUsuarios();
+        };
+
+        function aplicarRestriccionSucursalUsuario() {
+            sucursalesDB = obtenerSucursales();
+            const sel = document.getElementById('selectSucursalActiva');
+            const lockedBadge = document.getElementById('sucursalLockedBadge');
+            const ambitoSel = document.getElementById('filterAmbitoSucursal');
+            const esAdmin = esUsuarioAdministrador(currentUser);
+
+            if (!esAdmin) {
+                const asignada = obtenerSucursalAsignadaUsuario(currentUser, sucursalesDB);
+                if (asignada) {
+                    sucursalActiva = asignada;
+                    sessionStorage.setItem('opti_betesda_sucursal_activa', asignada.id);
+                    localStorage.setItem('opti_betesda_sucursal_activa', asignada.id);
+                }
+            } else {
+                sucursalActiva = obtenerSucursalActiva(currentUser);
+            }
+
+            if (sel) {
+                sel.innerHTML = '';
+                const opcionesVisibles = esAdmin
+                    ? sucursalesDB
+                    : sucursalesDB.filter(s => s.id === sucursalActiva.id);
+
+                (opcionesVisibles.length > 0 ? opcionesVisibles : [sucursalActiva]).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.nombre} (${s.id})`;
+                    if (s.id === sucursalActiva.id) opt.selected = true;
+                    sel.appendChild(opt);
+                });
+
+                sel.disabled = !esAdmin;
+                sel.classList.toggle('cursor-pointer', esAdmin);
+                sel.classList.toggle('cursor-not-allowed', !esAdmin);
+                sel.classList.toggle('opacity-90', !esAdmin);
+            }
+
+            if (lockedBadge) {
+                if (!esAdmin) {
+                    lockedBadge.textContent = '· Asignada';
+                    lockedBadge.classList.remove('hidden');
+                } else {
+                    lockedBadge.classList.add('hidden');
+                }
+            }
+
+            if (ambitoSel) {
+                if (!esAdmin) {
+                    ambitoSel.value = 'ACTIVA';
+                    ambitoSel.disabled = true;
+                    ambitoSel.classList.add('opacity-75', 'cursor-not-allowed');
+                } else {
+                    ambitoSel.disabled = false;
+                    ambitoSel.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        function renderSelectorSucursal() {
+            aplicarRestriccionSucursalUsuario();
+        }
+
+        function aplicarInterfazSucursal() {
+            if (document.getElementById('headerSucursalNombre')) {
+                document.getElementById('headerSucursalNombre').textContent = sucursalActiva.nombre;
+            }
+            if (document.getElementById('lblSucursalHistorial')) {
+                document.getElementById('lblSucursalHistorial').textContent = sucursalActiva.nombre;
+            }
+        }
+
+        function cambiarSucursalActiva(nuevaId) {
+            if (!esUsuarioAdministrador(currentUser)) {
+                aplicarRestriccionSucursalUsuario();
+                aplicarInterfazSucursal();
+                return;
+            }
+            const found = sucursalesDB.find(s => s.id === nuevaId);
+            if (!found) return;
+            sucursalActiva = found;
+            sessionStorage.setItem('opti_betesda_sucursal_activa', sucursalActiva.id);
+            localStorage.setItem('opti_betesda_sucursal_activa', sucursalActiva.id);
+            aplicarInterfazSucursal();
+            renderHistorialVentas();
+        }
+
+        function startSidebarTimer() {
+            clearTimeout(sidebarTimer);
+            sidebarTimer = setTimeout(() => { collapseSidebar(); }, 3000);
+        }
+
+        function expandSidebar() {
+            clearTimeout(sidebarTimer);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-16');
+            sidebar.classList.add('md:w-64');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('hidden', 'opacity-0'); el.classList.add('inline-block', 'opacity-100'); });
+        }
+
+        function collapseSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('md:w-64');
+            sidebar.classList.add('md:w-16');
+            sidebar.querySelectorAll('.sidebar-text').forEach(el => { el.classList.remove('inline-block', 'opacity-100'); el.classList.add('hidden', 'opacity-0'); });
+        }
+
+        function checkSession() {
+            const savedSession = sessionStorage.getItem('opti_betesda_session');
+            if (savedSession) {
+                currentUser = JSON.parse(savedSession);
+                const freshUsers = JSON.parse(localStorage.getItem('opti_betesda_users'));
+                if (Array.isArray(freshUsers) && freshUsers.length > 0) {
+                    usersDB = freshUsers;
+                    const syncedUser = usersDB.find(u => String(u.user || '').toLowerCase() === String(currentUser.user || '').toLowerCase());
+                    if (syncedUser) {
+                        currentUser = { ...currentUser, ...syncedUser };
+                        sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                    }
+                }
+
+                const currentPage = window.location.pathname.split('/').pop() || 'historial.html';
+                if (!esUsuarioAdministrador(currentUser) && Array.isArray(currentUser.modulos) && !currentUser.modulos.includes(currentPage)) {
+                    alert("Acceso denegado: No tienes permisos para acceder a este módulo.");
+                    window.location.href = currentUser.modulos[0] || 'index.html';
+                    return;
+                }
+
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                if (document.getElementById('navUserName')) document.getElementById('navUserName').textContent = currentUser.user;
+                if (document.getElementById('navUserRole')) document.getElementById('navUserRole').textContent = currentUser.role || 'Operador';
+                aplicarPermisosMenu();
+                startSidebarTimer();
+                renderSelectorSucursal();
+                aplicarInterfazSucursal();
+                renderHistorialVentas();
+            } else {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
+            }
+        }
+
+        function aplicarPermisosMenu() {
+            const sidebarLinks = document.querySelectorAll('#sidebar a[data-module]');
+            const esAdmin = esUsuarioAdministrador(currentUser);
+            sidebarLinks.forEach(link => {
+                const moduleName = link.getAttribute('data-module');
+                if (esAdmin || (currentUser.modulos && currentUser.modulos.includes(moduleName))) {
+                    link.style.display = '';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+        }
+
+        function handleLogin() {
+            usersDB = JSON.parse(localStorage.getItem('opti_betesda_users')) || [defaultAdmin];
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const found = usersDB.find(item => item.user === u && item.pass === p);
+            if (found) {
+                currentUser = found;
+                sessionStorage.setItem('opti_betesda_session', JSON.stringify(currentUser));
+                checkSession();
+            } else { alert("Usuario o contraseña incorrectos"); }
+        }
+
+        function logout() { sessionStorage.removeItem('opti_betesda_session'); checkSession(); }
+
+        function poblarSelectUsuarios() {
+            const select = document.getElementById('filterUsuario');
+            if (!select) return;
+            select.innerHTML = '<option value="TODOS">Todos los Usuarios</option>';
+            usersDB.forEach(u => {
+                select.innerHTML += `<option value="${u.user}">${u.user}</option>`;
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('filterFechaInicio').value = '';
+            document.getElementById('filterFechaFin').value = '';
+            if (document.getElementById('filterAmbitoSucursal')) {
+                document.getElementById('filterAmbitoSucursal').value = 'ACTIVA';
+            }
+            document.getElementById('filterUsuario').value = 'TODOS';
+            document.getElementById('searchInput').value = '';
+            renderHistorialVentas();
+        }
+
+        function obtenerRutaVenta(v) {
+            if (!Array.isArray(rutasDB) || rutasDB.length === 0) return null;
+            const nota = (v.nota || '').trim();
+            const sucId = v.sucursalId || TALLER_MATRIZ.id;
+            return rutasDB.find(r => {
+                const matchNota = nota && Array.isArray(r.notas) && r.notas.includes(nota);
+                const matchTramo = r.origenId === sucId || r.destinoId === sucId || (Array.isArray(r.sucursales) && r.sucursales.includes(sucId));
+                return matchNota || matchTramo;
+            }) || null;
+        }
+
+        function renderHistorialVentas() {
+            const tbody = document.getElementById('ventasTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            ventasGlobales = JSON.parse(localStorage.getItem('opti_betesda_ventas_realizadas')) || [];
+            rutasDB = JSON.parse(localStorage.getItem('opti_betesda_rutas')) || [];
+
+            const fechaInicio = document.getElementById('filterFechaInicio')?.value;
+            const fechaFin = document.getElementById('filterFechaFin')?.value;
+            const esAdmin = esUsuarioAdministrador(currentUser);
+            const ambito = esAdmin ? (document.getElementById('filterAmbitoSucursal')?.value || 'ACTIVA') : 'ACTIVA';
+            const usuarioFiltro = document.getElementById('filterUsuario')?.value || 'TODOS';
+            const search = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+            let sumaTotal = 0;
+            let contador = 0;
+
+            const filtered = ventasGlobales.filter((v, index) => {
+                v.originalIndex = index;
+                const vSucursal = v.sucursalId || TALLER_MATRIZ.id;
+                const rutaVinculada = obtenerRutaVenta(v);
+                const enRutaActiva = rutaVinculada && (rutaVinculada.origenId === sucursalActiva.id || rutaVinculada.destinoId === sucursalActiva.id);
+
+                if (ambito !== 'TODAS' && vSucursal !== sucursalActiva.id && !enRutaActiva) return false;
+
+                let vFechaStr = v.fecha ? v.fecha.split(' ')[0] : '';
+                
+                let matchFecha = true;
+                if (fechaInicio && vFechaStr < fechaInicio) matchFecha = false;
+                if (fechaFin && vFechaStr > fechaFin) matchFecha = false;
+
+                let vendedorVenta = v.vendedor || 'Admin';
+                let matchUsuario = (usuarioFiltro === 'TODOS' || vendedorVenta.toLowerCase() === usuarioFiltro.toLowerCase());
+
+                let articulosTexto = '';
+                const listaItems = v.items || v.carrito;
+                if (Array.isArray(listaItems)) {
+                    articulosTexto = listaItems.map(item => item.nombre || item.descripcion || '').join(' ');
+                }
+
+                const rutaTexto = rutaVinculada ? `${rutaVinculada.codigo || ''} ${rutaVinculada.nombre || ''} ${rutaVinculada.estado || ''}` : '';
+                let textoCompleto = `${v.fecha || ''} ${v.nota || ''} ${v.paciente || ''} ${v.detalle || ''} ${v.vendedor || ''} ${v.sucursalNombre || ''} ${rutaTexto} ${articulosTexto}`.toLowerCase();
+                let matchSearch = textoCompleto.includes(search);
+
+                return matchFecha && matchUsuario && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                const msgSuc = ambito === 'TODAS' ? 'ninguna sucursal' : sucursalActiva.nombre;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-6 text-center text-slate-400">No se encontraron ventas en ${msgSuc} con los filtros aplicados.</td></tr>`;
+                document.getElementById('totalVentasCount').textContent = `Mostrando 0 ventas`;
+                document.getElementById('totalVentasSum').textContent = `$0.00`;
+                return;
+            }
+
+            filtered.forEach(v => {
+                let totalVenta = Number(v.total) || 0;
+                let saldoPendiente = Number(v.saldoPendiente) || 0;
+                const sucNom = v.sucursalNombre || TALLER_MATRIZ.nombre;
+                const rutaVinculada = obtenerRutaVenta(v);
+                
+                if (v.cancelada) {
+                    totalVenta = 0;
+                } else {
+                    sumaTotal += totalVenta;
+                }
+                contador++;
+
+                let estadoPagoHTML = '';
+                if (v.cancelada) {
+                    estadoPagoHTML = `<span class="bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full font-bold text-[10px]">Cancelada</span>`;
+                } else if (saldoPendiente > 0) {
+                    estadoPagoHTML = `<span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full font-bold text-[10px]">Anticipo (Resta: $${saldoPendiente.toFixed(2)})</span>`;
+                } else {
+                    estadoPagoHTML = `<span class="bg-betesda-lightgreen text-betesda-darkgreen px-2.5 py-1 rounded-full font-bold text-[10px]"><i class="fa-solid fa-check mr-1"></i> Liquidado</span>`;
+                }
+
+                const rutaBadge = rutaVinculada
+                    ? `<div class="text-[10px] text-betesda-darkgreen font-bold mt-0.5"><i class="fa-solid fa-route text-betesda-gold mr-1"></i>${rutaVinculada.nombre || rutaVinculada.codigo || 'Ruta'}</div>`
+                    : `<div class="text-[10px] text-slate-400 mt-0.5">Taller central: Matriz</div>`;
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-betesda-softgreen ${v.cancelada ? 'opacity-60 bg-rose-50/50' : ''}">
+                        <td class="p-3 font-mono text-slate-500">${v.fecha || 'N/D'} ${v.hora || ''}</td>
+                        <td class="p-3 font-bold text-betesda-green">${v.nota || 'S/N'}</td>
+                        <td class="p-3">
+                            <span class="bg-betesda-softgreen text-betesda-darkgreen border border-betesda-lightgreen font-bold text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap">${sucNom}</span>
+                            ${rutaBadge}
+                        </td>
+                        <td class="p-3 font-semibold text-slate-800">${v.paciente || 'General'}</td>
+                        <td class="p-3">${estadoPagoHTML}</td>
+                        <td class="p-3 font-medium text-betesda-darkgreen">${v.vendedor || 'Admin'}</td>
+                        <td class="p-3 text-right font-extrabold text-betesda-green">$${(Number(v.total) || 0).toFixed(2)}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="verDetalleVenta(${v.originalIndex})" class="bg-betesda-lightgreen text-betesda-darkgreen hover:bg-betesda-green hover:text-white px-3 py-1.5 rounded-xl font-bold transition shadow-sm">
+                                <i class="fa-solid fa-eye mr-1"></i> Ver
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('totalVentasCount').textContent = `Mostrando ${contador} ${contador === 1 ? 'venta' : 'ventas'}`;
+            document.getElementById('totalVentasSum').textContent = `$${sumaTotal.toFixed(2)}`;
+        }
+
+        function verDetalleVenta(index) {
+            const v = ventasGlobales[index];
+            if (!v) return;
+            const sucNom = v.sucursalNombre || TALLER_MATRIZ.nombre;
+            const rutaVinculada = obtenerRutaVenta(v);
+
+            let tablaArticulosHTML = '';
+            const listaItems = v.items || v.carrito;
+            
+            if (Array.isArray(listaItems) && listaItems.length > 0) {
+                let filas = '';
+                listaItems.forEach(item => {
+                    let nombreItem = item.nombre || item.descripcion || item.codigo || 'Artículo sin nombre';
+                    let cantidad = item.cantidad || 1;
+                    let descPct = item.descuentoPorcentaje || 0;
+                    let precioUnitarioBase = Number(item.precio || item.precioVenta || 0);
+                    let precioFinal = precioUnitarioBase * (1 - descPct / 100);
+                    let subtotalItem = cantidad * precioFinal;
+
+                    let rxHtml = '';
+                    if (item.rx) {
+                        rxHtml = `
+                            <div class="text-[10px] font-mono text-slate-500 mt-0.5">
+                                <strong>RX:</strong> OD (ESF:${item.rx.od?.esf} CIL:${item.rx.od?.cil}) | OI (ESF:${item.rx.oi?.esf} CIL:${item.rx.oi?.cil})
+                            </div>
+                        `;
+                    }
+
+                    filas += `
+                        <tr class="border-b">
+                            <td class="p-2.5 font-medium text-slate-800">
+                                ${nombreItem}
+                                ${rxHtml}
+                            </td>
+                            <td class="p-2.5 text-center font-bold">${cantidad}</td>
+                            <td class="p-2.5 text-right">$${precioFinal.toFixed(2)}</td>
+                            <td class="p-2.5 text-right font-extrabold text-betesda-green">$${subtotalItem.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                tablaArticulosHTML = `
+                    <div class="overflow-x-auto border border-betesda-lightgreen rounded-2xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-betesda-green text-white font-bold">
+                                <tr>
+                                    <th class="p-2.5">Artículo / Descripción</th>
+                                    <th class="p-2.5 text-center">Cant.</th>
+                                    <th class="p-2.5 text-right">Precio U.</th>
+                                    <th class="p-2.5 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-betesda-lightgreen/50 bg-white">${filas}</tbody>
+                        </table>
+                    </div>
+                `;
+            } else {
+                tablaArticulosHTML = `
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-betesda-lightgreen text-center text-slate-500 font-medium">
+                        ${v.detalle || 'Venta registrada sin desglose detallado de artículos.'}
+                    </div>
+                `;
+            }
+
+            let totalVenta = Number(v.total) || 0;
+            let saldoPendiente = Number(v.saldoPendiente) || 0;
+            let totalAbonado = 0;
+
+            if (v.historialAbonos && v.historialAbonos.length > 0) {
+                v.historialAbonos.forEach(a => totalAbonado += Number(a.monto) || 0);
+            } else {
+                totalAbonado = Number(v.montoCobradoAhora) || (totalVenta - saldoPendiente);
+            }
+
+            const rutaInfoHTML = rutaVinculada
+                ? `<div class="bg-amber-50 border border-amber-200 text-amber-900 px-3 py-2 rounded-2xl text-[11px] font-medium">
+                        <strong class="uppercase text-[10px]">Ruta / Traslado Vinculado:</strong> ${rutaVinculada.nombre || rutaVinculada.codigo} · ${rutaVinculada.origenNombre || 'Matriz'} → ${rutaVinculada.destinoNombre || 'Matriz'} (${rutaVinculada.estado || 'Programada'})
+                   </div>`
+                : `<div class="bg-betesda-softgreen border border-betesda-lightgreen text-betesda-darkgreen px-3 py-2 rounded-2xl text-[11px] font-medium">
+                        <strong class="uppercase text-[10px]">Sucursal de Venta:</strong> ${sucNom} · Taller central en Matriz
+                   </div>`;
+
+            const modalContent = document.getElementById('modalBodyContent');
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-2xl border border-betesda-lightgreen text-center">
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Nota / Folio</span>
+                        <span class="font-bold text-betesda-green">${v.nota || 'S/N'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Fecha / Hora</span>
+                        <span class="font-bold">${v.fecha || 'N/D'} ${v.hora || ''}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Paciente</span>
+                        <span class="font-bold">${v.paciente || 'General'}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-slate-400 uppercase font-bold">Vendedor</span>
+                        <span class="font-bold text-betesda-darkgreen">${v.vendedor || 'Admin'}</span>
+                    </div>
+                </div>
+
+                ${rutaInfoHTML}
+
+                <div>
+                    <strong class="block text-betesda-green uppercase text-[10px] mb-1.5"><i class="fa-solid fa-boxes-stacked mr-1"></i> Artículos Incluidos en la Venta</strong>
+                    ${tablaArticulosHTML}
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 bg-betesda-softgreen p-3 rounded-2xl border border-betesda-lightgreen text-center">
+                    <div>
+                        <span class="block text-[10px] text-slate-500 uppercase font-bold">Total Venta</span>
+                        <span class="font-bold text-slate-800">$${totalVenta.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-blue-600 uppercase font-bold">Total Abonado</span>
+                        <span class="font-bold text-blue-600">$${totalAbonado.toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-amber-700 uppercase font-bold">Saldo Pendiente</span>
+                        <span class="font-extrabold text-amber-700">$${saldoPendiente > 0 ? saldoPendiente.toFixed(2) : '0.00 (Liquidado)'}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalDetalleVenta').classList.remove('hidden');
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalDetalleVenta').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
